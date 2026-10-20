@@ -2,7 +2,8 @@
 
 Run on a laptop / Colab (needs TensorFlow), NOT on the Pi.
 
-Dataset layout (one folder per class, names must match config.LABELS):
+Dataset layout (one folder per class, names must match config.CLASSES,
+including a "background" folder of non-sign crops):
     data/train/speed_limit_50/*.png
     data/train/stop/*.png
     ...
@@ -15,10 +16,12 @@ IRC:67 photos (own dash-cam crops) for the classes GTSRB lacks.
 """
 import argparse
 import sys
+
+import numpy as np
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from pipeline.config import LABELS  # noqa: E402
+from pipeline.config import CLASSES  # noqa: E402
 
 SIZE = 32
 
@@ -54,7 +57,7 @@ def main():
     ap.add_argument("--epochs", type=int, default=30)
     a = ap.parse_args()
 
-    kw = dict(image_size=(SIZE, SIZE), batch_size=64, class_names=LABELS,
+    kw = dict(image_size=(SIZE, SIZE), batch_size=64, class_names=CLASSES,
               label_mode="int")
     train = tf.keras.utils.image_dataset_from_directory(f"{a.data}/train", shuffle=True, **kw)
     val = tf.keras.utils.image_dataset_from_directory(f"{a.data}/val", shuffle=False, **kw)
@@ -72,7 +75,7 @@ def main():
     train = train.map(norm).map(lambda x, y: (aug(x, training=True), y)).prefetch(2)
     val = val.map(norm).prefetch(2)
 
-    model = build_model(len(LABELS))
+    model = build_model(len(CLASSES))
     model.summary()
     print("parameters:", model.count_params())
     model.compile(optimizer=tf.keras.optimizers.Adam(1e-3),
@@ -97,6 +100,32 @@ def main():
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     Path(a.out).write_bytes(conv.convert())
     print("wrote", a.out)
+
+    npz = str(Path(a.out).with_suffix(".npz"))
+    export_npz(model, npz)
+    print("wrote", npz, "(laptop demo, NumPy only)")
+
+
+def export_npz(model, path):
+    """Save weights for pipeline.classifier.NumpyClassifier, with each
+    BatchNorm folded into the conv before it: w' = w*g/s, b' = beta - mean*g/s."""
+    import tensorflow as tf
+    L = tf.keras.layers
+    out, convs, pending = {}, [], None
+    for layer in model.layers:
+        if isinstance(layer, L.Conv2D):
+            pending = layer.get_weights()[0]
+        elif isinstance(layer, L.BatchNormalization):
+            g, beta, mean, var = layer.get_weights()
+            s = g / np.sqrt(var + layer.epsilon)
+            convs.append(((pending * s).astype(np.float32), (beta - mean * s).astype(np.float32)))
+            pending = None
+        elif isinstance(layer, L.Dense):
+            out["dense_w"], out["dense_b"] = [w.astype(np.float32) for w in layer.get_weights()]
+    for i, (w, b) in enumerate(convs):
+        out[f"conv{i}_w"], out[f"conv{i}_b"] = w, b
+    out["n_conv"] = np.array(len(convs))
+    np.savez_compressed(path, **out)
 
 
 if __name__ == "__main__":

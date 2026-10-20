@@ -13,15 +13,25 @@ import signal
 import time
 
 from .capture import CameraSource, LatestFrame
-from .classifier import TFLiteClassifier
-from .config import SPEED_LIMIT_KMH, Config
+from .classifier import load_classifier
+from .config import BACKGROUND, SPEED_LIMIT_KMH, Config
 from .health import CameraHealth
 from .proposals import propose
+from .verify import shape_agrees
 from .publisher import Publisher
 from .throttle import pi_is_throttled
 from .voting import TemporalVoter
 
 log = logging.getLogger("vision")
+
+
+def _overlap(a, b):
+    """Intersection over the smaller box (a sign seen nearer/further still overlaps)."""
+    ax, ay, aw, ah = a
+    bx, by, bw, bh = b
+    ix = max(0, min(ax + aw, bx + bw) - max(ax, bx))
+    iy = max(0, min(ay + ah, by + bh) - max(ay, by))
+    return ix * iy / float(min(aw * ah, bw * bh) + 1e-9)
 
 
 class VisionPipeline:
@@ -35,6 +45,11 @@ class VisionPipeline:
                                    cfg.sighting_gap_frames)
         self.stage_ms = {"health": 0.0, "propose": 0.0, "classify": 0.0}
         self.frames = 0
+        # what this frame saw, for drawing in the demo: (box, label, conf, counted)
+        self.last_detections = []
+        # signs already confirmed and still in view: label -> (box, frame seen)
+        # A confirmed sign cannot turn into a different sign at the same spot.
+        self.locked = {}
 
     def process(self, rgb, t_capture):
         self.frames += 1
@@ -47,6 +62,7 @@ class VisionPipeline:
             if change == "blinded":
                 self.voter.reset()
         t1 = time.monotonic()
+        self.last_detections = []
         if self.health.blinded:
             self._acc("health", t1 - t0)
             return []
@@ -57,13 +73,29 @@ class VisionPipeline:
         votes, best_conf = set(), {}
         if boxes:
             crops = [rgb[y:y + h, x:x + w] for (x, y, w, h) in boxes]
-            for label, conf in self.clf.classify(crops):
-                if conf >= self.cfg.min_confidence:
+            for box, (label, conf, *rest) in zip(boxes, self.clf.classify(crops)):
+                margin = rest[0] if rest else conf
+                # a vote needs a confident answer that clearly beats the runner-up
+                # (stops "50 or 100?" coin-flips from voting)
+                counted = (label != BACKGROUND and conf >= self.cfg.min_confidence
+                           and margin >= self.cfg.min_margin)
+                if counted and self.cfg.verify_shape:
+                    x, y, w, h = box
+                    counted = shape_agrees(rgb[y:y + h, x:x + w], label)
+                if counted:
+                    counted = self._identity_ok(label, box)
+                self.last_detections.append((box, label, conf, counted))
+                if counted:
                     votes.add(label)
                     best_conf[label] = max(conf, best_conf.get(label, 0.0))
         t3 = time.monotonic()
 
         confirmed = self.voter.update(votes, t_capture)
+        for box, label, conf, cnt in self.last_detections:          # keep locks fresh
+            if cnt and (label in confirmed or label in self.locked):
+                self.locked[label] = (box, self.frames)
+        gap = self.cfg.sighting_gap_frames
+        self.locked = {k: v for k, v in self.locked.items() if self.frames - v[1] <= gap}
         now = time.monotonic()
         for label in confirmed:
             ev = {"type": "sign", "label": label,
@@ -81,13 +113,21 @@ class VisionPipeline:
         self._acc("classify", t3 - t2)
         return confirmed
 
+    def _identity_ok(self, label, box):
+        """False if this spot already holds a different, recently confirmed sign."""
+        for other, (obox, seen) in self.locked.items():
+            if other != label and self.frames - seen <= self.cfg.sighting_gap_frames \
+                    and _overlap(box, obox) > 0.3:
+                return False
+        return True
+
     def _acc(self, k, dt):
         # running average in ms (for the PDR timing table)
         self.stage_ms[k] += (dt * 1000 - self.stage_ms[k]) / max(self.frames, 1)
 
 
 def run(source, cfg):
-    clf = TFLiteClassifier(cfg)
+    clf = load_classifier(cfg)
     pub = Publisher(cfg.socket_path)
     pipe = VisionPipeline(cfg, clf, pub)
     mailbox = LatestFrame()

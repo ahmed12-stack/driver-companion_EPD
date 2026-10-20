@@ -5,3 +5,7 @@ data/
 *.avi
 *.mp4
 logs/
+
+# demo run output (webcam snapshots, trip database)
+vision/demo/detections/
+*.db
