@@ -59,7 +59,7 @@ class CameraSource(threading.Thread):
         cam = Picamera2()
         cam.configure(cam.create_video_configuration(
             main={"size": (self.cfg.frame_width, self.cfg.frame_height),
-                  "format": "RGB888"}))
+                  "format": "BGR888"}))
         cam.start()
         return lambda: cam.capture_array(), cam.stop
 
