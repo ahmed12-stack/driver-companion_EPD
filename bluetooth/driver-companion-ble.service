@@ -1,0 +1,15 @@
+[Unit]
+Description=Driver Companion Bluetooth gateway
+After=bluetooth.service
+Requires=bluetooth.service
+
+[Service]
+WorkingDirectory=/opt/driver-companion/bluetooth
+ExecStart=/opt/driver-companion/venv/bin/python -m dc_ble
+Environment=DC_DATA_DIR=/var/lib/driver-companion
+Restart=always
+RestartSec=2
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
