@@ -24,6 +24,7 @@ import android.os.Looper
 import android.os.ParcelUuid
 import android.util.Log
 import com.drivercompanion.app.AppSettings
+import com.drivercompanion.app.TripStore
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.UUID
@@ -48,6 +49,7 @@ data class LinkStatus(
 class DeviceLink(
     context: Context,
     private val settings: AppSettings,
+    private val trips: TripStore,
     private val onStatus: (LinkStatus) -> Unit,
 ) {
     private sealed class Op(val uuid: UUID) {
@@ -69,8 +71,10 @@ class DeviceLink(
     private var nextMsgId = 0
     private var nextSeq = 0
     private val statusIn = Reassembler()
+    private val tripIn = Reassembler()
     private var stayConnected = false
     private var scanning = false
+    private var reconnecting = false  // true while searching for the saved device
     private var firmware: String? = null
 
     var status = LinkStatus(LinkState.IDLE)
@@ -94,6 +98,7 @@ class DeviceLink(
         stopScan()
         disconnectInternal()
         stayConnected = true
+        reconnecting = false
         val filters = listOf(ScanFilter.Builder().setServiceUuid(ParcelUuid(Protocol.SERVICE)).build())
         val scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
         scanner.startScan(filters, scanSettings, scanCallback)
@@ -102,23 +107,42 @@ class DeviceLink(
         main.postDelayed(scanTimeout, SCAN_TIMEOUT_MS)
     }
 
-    /** Reconnect to the saved device; waits in the background until it is in range. */
+    /** Reconnect to the saved device; keeps searching until it is in range. */
     fun start() = onMain {
         val address = settings.deviceAddress
         if (address == null) {
             update(LinkState.IDLE, "No device paired yet.")
             return@onMain
         }
-        val a = adapter
-        if (a == null || !a.isEnabled) {
-            update(LinkState.BLUETOOTH_OFF, "Turn on Bluetooth to connect.")
-            return@onMain
-        }
         if (gatt != null || scanning) return@onMain
         stayConnected = true
-        val d = a.getRemoteDevice(address)
-        device = d
-        connect(d, autoConnect = true)
+        device = adapter?.getRemoteDevice(address)
+        searchForSaved()
+    }
+
+    /**
+     * Actively look for the saved device and connect the moment it is seen.
+     * Android's own background reconnect (autoConnect) can take minutes, so we
+     * search in 25-second windows with 5-second pauses (well inside Android's
+     * limit of 5 scan starts per 30 seconds) until it is found.
+     */
+    private fun searchForSaved() {
+        if (!stayConnected || gatt != null || scanning) return
+        val d = device ?: return
+        val a = adapter
+        val scanner = a?.bluetoothLeScanner
+        if (a == null || !a.isEnabled || scanner == null) {
+            update(LinkState.BLUETOOTH_OFF, "Turn on Bluetooth to connect.")
+            main.postDelayed(reconnect, BLUETOOTH_OFF_RETRY_MS)
+            return
+        }
+        val filters = listOf(ScanFilter.Builder().setDeviceAddress(d.address).build())
+        val scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_BALANCED).build()
+        scanner.startScan(filters, scanSettings, scanCallback)
+        scanning = true
+        reconnecting = true
+        update(LinkState.CONNECTING, "Looking for your device…")
+        main.postDelayed(scanTimeout, RECONNECT_SCAN_MS)
     }
 
     fun stop() = onMain {
@@ -161,7 +185,7 @@ class DeviceLink(
         sendNow(Protocol.NOTIFICATION_IN, msg)
     }
 
-    fun sendLocation(lat: Double, lon: Double, kmh: Double, accuracyM: Double) = onMain {
+    fun sendLocation(lat: Double, lon: Double, kmh: Double, accuracyM: Double, timeMs: Long) = onMain {
         if (!isReady) return@onMain
         // Drop this fix if the last one has not gone out yet; a newer one follows in a second.
         if (ops.any { it.uuid == Protocol.LOCATION_IN }) return@onMain
@@ -171,7 +195,7 @@ class DeviceLink(
             .put("lon", lon)
             .put("kmh", kmh)
             .put("acc", accuracyM)
-            .put("ts", System.currentTimeMillis() / 1000)
+            .put("ts", timeMs / 1000.0)  // the fix's own time: the Pi has no reliable clock
         sendNow(Protocol.LOCATION_IN, msg, noResponse = true)
     }
 
@@ -194,16 +218,16 @@ class DeviceLink(
 
     // ----- connection steps --------------------------------------------
 
-    private fun connect(d: BluetoothDevice, autoConnect: Boolean) {
-        update(LinkState.CONNECTING, if (autoConnect) "Waiting for the device…" else "Connecting…")
-        gatt = d.connectGatt(context, autoConnect, callback, BluetoothDevice.TRANSPORT_LE)
+    private fun connect(d: BluetoothDevice) {
+        update(LinkState.CONNECTING, "Connecting…")
+        gatt = d.connectGatt(context, false, callback, BluetoothDevice.TRANSPORT_LE)
     }
 
     private fun onFound(d: BluetoothDevice) {
         if (!scanning) return
         stopScan()
         device = d
-        connect(d, autoConnect = false)
+        connect(d)
     }
 
     private fun onServices(g: BluetoothGatt) {
@@ -230,11 +254,36 @@ class DeviceLink(
     private fun afterBonded() {
         update(LinkState.SETTING_UP, "Paired. Checking the device…")
         enqueue(Op.EnableNotify(Protocol.STATUS))
+        // Before hello: the device sends waiting trips as soon as it gets the hello.
+        enqueue(Op.EnableNotify(Protocol.TRIP_OUT))
         sendNow(
             Protocol.SETTINGS,
             JSONObject().put("t", "hello").put("proto", Protocol.VERSION).put("app", Protocol.APP_VERSION),
         )
         main.postDelayed(helloTimeout, HELLO_TIMEOUT_MS)
+    }
+
+    private fun onPacket(uuid: UUID, packet: ByteArray) {
+        when (uuid) {
+            Protocol.STATUS -> onStatusPacket(packet)
+            Protocol.TRIP_OUT -> onTripPacket(packet)
+        }
+    }
+
+    private fun onTripPacket(packet: ByteArray) {
+        val body = tripIn.feed(packet) ?: return
+        val msg = try {
+            JSONObject(String(body, Charsets.UTF_8))
+        } catch (e: JSONException) {
+            Log.w(TAG, "unreadable trip message")
+            return
+        }
+        if (msg.optString("t") != "trip") return
+        val trip = TripStore.fromMessage(msg) ?: return
+        // Confirm only once it is saved; otherwise the device sends it again next time.
+        if (trips.save(trip)) {
+            sendNow(Protocol.SETTINGS, JSONObject().put("t", "trip_ack").put("id", trip.id))
+        }
     }
 
     private fun onStatusPacket(packet: ByteArray) {
@@ -291,12 +340,14 @@ class DeviceLink(
         ops.clear()
         busy = false
         statusIn.reset()
+        tripIn.reset()
         mtu = Protocol.MIN_MTU
     }
 
     private fun stopScan() {
         if (!scanning) return
         scanning = false
+        reconnecting = false
         main.removeCallbacks(scanTimeout)
         try {
             adapter?.bluetoothLeScanner?.stopScan(scanCallback)
@@ -401,20 +452,24 @@ class DeviceLink(
     }
 
     private val scanTimeout = Runnable {
+        val wasReconnecting = reconnecting
         stopScan()
-        stayConnected = false
-        update(
-            LinkState.DISCONNECTED,
-            "No device found. Check it is powered and in pairing mode (hold the button 5 seconds).",
-        )
+        if (wasReconnecting) {
+            // Saved device not in range yet: pause, then search again.
+            update(LinkState.CONNECTING, "Device not in range. Still looking…")
+            main.postDelayed(reconnect, RECONNECT_PAUSE_MS)
+        } else {
+            stayConnected = false
+            update(
+                LinkState.DISCONNECTED,
+                "No device found. Check it is powered and in pairing mode (hold the button 5 seconds).",
+            )
+        }
     }
 
     private val helloTimeout = Runnable { linkLost("The device did not answer.") }
 
-    private val reconnect = Runnable {
-        val d = device
-        if (stayConnected && gatt == null && d != null) connect(d, autoConnect = true)
-    }
+    private val reconnect = Runnable { searchForSaved() }
 
     private val opTimeout = Runnable {
         Log.w(TAG, "Bluetooth operation timed out")
@@ -498,7 +553,7 @@ class DeviceLink(
             if (Build.VERSION.SDK_INT >= 33) return
             val value = ch.value?.copyOf() ?: return
             val uuid = ch.uuid
-            onMain { if (g === gatt && uuid == Protocol.STATUS) onStatusPacket(value) }
+            onMain { if (g === gatt) onPacket(uuid, value) }
         }
 
         // Android 13 and newer.
@@ -509,7 +564,7 @@ class DeviceLink(
         ) {
             val copy = value.copyOf()
             val uuid = ch.uuid
-            onMain { if (g === gatt && uuid == Protocol.STATUS) onStatusPacket(copy) }
+            onMain { if (g === gatt) onPacket(uuid, copy) }
         }
     }
 
@@ -528,6 +583,9 @@ class DeviceLink(
         private const val SCAN_TIMEOUT_MS = 20_000L
         private const val HELLO_TIMEOUT_MS = 10_000L
         private const val RECONNECT_DELAY_MS = 3_000L
+        private const val RECONNECT_SCAN_MS = 25_000L
+        private const val RECONNECT_PAUSE_MS = 5_000L
+        private const val BLUETOOTH_OFF_RETRY_MS = 10_000L
         private const val OP_TIMEOUT_MS = 5_000L
         private const val PAIRING_HINT = "Type the 6-digit code the device speaks into the box Android shows."
 

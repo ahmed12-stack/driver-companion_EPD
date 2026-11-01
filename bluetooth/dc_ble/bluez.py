@@ -188,6 +188,8 @@ class BluetoothService:
         self.trip_out = None
         self.bus = None
         self.adapter = None
+        self.adverts = None
+        self._advert_lock = asyncio.Lock()
 
     def attach(self, gateway):
         self.gateway = gateway
@@ -195,6 +197,10 @@ class BluetoothService:
     def push_status(self, packet: bytes):
         if self.status is not None:
             self.status.push(packet)
+
+    def push_trip(self, packet: bytes):
+        if self.trip_out is not None:
+            self.trip_out.push(packet)
 
     def _writer(self, slot):
         def write(data, mtu):
@@ -242,8 +248,8 @@ class BluetoothService:
 
         gatt = adapter_obj.get_interface("org.bluez.GattManager1")
         await gatt.call_register_application(APP_PATH, {})
-        adverts = adapter_obj.get_interface("org.bluez.LEAdvertisingManager1")
-        await adverts.call_register_advertisement(ADVERT_PATH, {})
+        self.adverts = adapter_obj.get_interface("org.bluez.LEAdvertisingManager1")
+        await self.adverts.call_register_advertisement(ADVERT_PATH, {})
 
         root = self.bus.get_proxy_object(BLUEZ, "/org/bluez",
                                          await self.bus.introspect(BLUEZ, "/org/bluez"))
@@ -253,6 +259,43 @@ class BluetoothService:
 
         await self._watch_devices()
         log.info("advertising as %s", name)
+        # Only after our service is registered, so a reconnecting phone finds it.
+        await self._drop_stale_connections()
+
+    async def _drop_stale_connections(self):
+        """A phone still connected from before this program started has no
+        session with us. Disconnect it so it reconnects and says hello again."""
+        root = self.bus.get_proxy_object(BLUEZ, "/", await self.bus.introspect(BLUEZ, "/"))
+        objects = await root.get_interface("org.freedesktop.DBus.ObjectManager").call_get_managed_objects()
+        for path, interfaces in objects.items():
+            device = interfaces.get("org.bluez.Device1")
+            if not path.startswith(ADAPTER_PATH + "/") or device is None:
+                continue
+            connected = device.get("Connected")
+            if connected is None or not connected.value:
+                continue
+            try:
+                proxy = self.bus.get_proxy_object(BLUEZ, path, await self.bus.introspect(BLUEZ, path))
+                await proxy.get_interface("org.bluez.Device1").call_disconnect()
+                log.info("dropped a connection left over from before the restart")
+            except DBusError as e:
+                log.warning("could not drop old connection: %s", e)
+
+    async def _readvertise(self):
+        """The Pi pauses advertising while a phone is connected and, after some
+        disconnects, never resumes, so phones can no longer find it. Registering
+        the advertisement again after every disconnect makes it findable."""
+        async with self._advert_lock:
+            await asyncio.sleep(0.5)  # let BlueZ finish tearing down the link
+            try:
+                await self.adverts.call_unregister_advertisement(ADVERT_PATH)
+            except DBusError:
+                pass  # already gone
+            try:
+                await self.adverts.call_register_advertisement(ADVERT_PATH, {})
+                log.info("advertising again")
+            except DBusError as e:
+                log.warning("could not restart advertising: %s", e)
 
     async def _watch_devices(self):
         rule = ("type='signal',sender='org.bluez',"
@@ -275,6 +318,7 @@ class BluetoothService:
             else:
                 log.info("phone disconnected")
                 self.gateway.connection_lost()
+                asyncio.get_running_loop().create_task(self._readvertise())
         if "Paired" in changed and changed["Paired"].value and self.gateway.pairing:
             self.gateway.speaker.say("Phone paired.", Priority.SYSTEM)
             asyncio.get_running_loop().create_task(self.stop_pairing(announce=False))

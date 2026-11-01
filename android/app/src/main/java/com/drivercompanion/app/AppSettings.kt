@@ -50,6 +50,11 @@ class AppSettings(context: Context) {
         get() = prefs.getBoolean("quiet", false)
         set(value) { prefs.edit().putBoolean("quiet", value).apply() }
 
+    /** False after the user taps Stop, until they tap Reconnect or Pair. */
+    var autoConnect: Boolean
+        get() = prefs.getBoolean("auto_connect", true)
+        set(value) { prefs.edit().putBoolean("auto_connect", value).apply() }
+
     var forwardCalls: Boolean
         get() = prefs.getBoolean("forward_calls", true)
         set(value) { prefs.edit().putBoolean("forward_calls", value).apply() }

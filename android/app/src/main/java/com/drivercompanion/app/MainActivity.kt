@@ -3,9 +3,11 @@ package com.drivercompanion.app
 import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +26,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -41,6 +44,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.drivercompanion.app.ble.LinkState
 import com.drivercompanion.app.ble.LinkStatus
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+private sealed interface Screen {
+    data object Home : Screen
+    data object Trips : Screen
+    data class Detail(val id: String) : Screen
+}
 
 class MainActivity : ComponentActivity() {
     /** Bumped on every resume so permission checks refresh after returning from Settings. */
@@ -51,7 +64,22 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
                 Surface(Modifier.fillMaxSize()) {
-                    HomeScreen(resumeCount)
+                    var screen by remember { mutableStateOf<Screen>(Screen.Home) }
+                    BackHandler(enabled = screen != Screen.Home) {
+                        screen = if (screen is Screen.Detail) Screen.Trips else Screen.Home
+                    }
+                    when (val s = screen) {
+                        Screen.Home -> HomeScreen(
+                            resumeCount,
+                            onOpenTrips = { screen = Screen.Trips },
+                            onOpenTrip = { screen = Screen.Detail(it) },
+                        )
+                        Screen.Trips -> TripsScreen(
+                            onBack = { screen = Screen.Home },
+                            onOpenTrip = { screen = Screen.Detail(it) },
+                        )
+                        is Screen.Detail -> TripDetailScreen(s.id, onBack = { screen = Screen.Trips })
+                    }
                 }
             }
         }
@@ -64,9 +92,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun HomeScreen(resumeCount: Int) {
+private fun HomeScreen(resumeCount: Int, onOpenTrips: () -> Unit, onOpenTrip: (String) -> Unit) {
     val context = LocalContext.current
     val settings = remember { AppSettings(context) }
+    val trips = rememberTrips()
     var status by remember { mutableStateOf(LinkHub.status) }
     var permissionResults by remember { mutableIntStateOf(0) }
     val perms = remember(resumeCount, permissionResults) { Permissions.check(context) }
@@ -81,9 +110,18 @@ private fun HomeScreen(resumeCount: Int) {
         onDispose { LinkHub.removeListener(listener) }
     }
 
-    // Reconnect automatically to a device paired earlier.
+    // Reconnect automatically to a device paired earlier, unless the user tapped Stop.
     LaunchedEffect(perms.bluetooth) {
-        if (perms.bluetooth && settings.deviceAddress != null && LinkHub.link == null) {
+        if (perms.bluetooth && settings.deviceAddress != null && settings.autoConnect &&
+            LinkHub.link == null
+        ) {
+            LinkService.send(context, LinkService.ACTION_START)
+        }
+    }
+
+    // Location allowed while already connected: tell the service to start phone GPS.
+    LaunchedEffect(perms.location) {
+        if (perms.location && LinkHub.link?.isReady == true) {
             LinkService.send(context, LinkService.ACTION_START)
         }
     }
@@ -101,6 +139,7 @@ private fun HomeScreen(resumeCount: Int) {
             fontWeight = FontWeight.SemiBold,
         )
         ConnectionCard(context, settings, status, perms.bluetooth)
+        TripsCard(trips, onOpenTrips, onOpenTrip)
         PermissionsCard(context, perms) { askPermissions.launch(it) }
         SettingsCard(settings)
     }
@@ -125,18 +164,29 @@ private fun ConnectionCard(context: Context, settings: AppSettings, status: Link
                 Text("Allow Bluetooth in Permissions below first.", color = MaterialTheme.colorScheme.error)
             }
 
-            if (status.state == LinkState.READY) {
+            val state = status.state
+            val searching = LinkHub.link != null && state != LinkState.READY && state != LinkState.IDLE
+            if (state == LinkState.READY) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { LinkHub.link?.sendTest() }) { Text("Send test alert") }
                     OutlinedButton(onClick = { LinkService.send(context, LinkService.ACTION_STOP) }) {
                         Text("Disconnect")
                     }
                 }
-            } else if (hasDevice) {
-                Button(
-                    onClick = { LinkService.send(context, LinkService.ACTION_START) },
-                    enabled = bluetoothAllowed,
-                ) { Text("Reconnect") }
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (searching) {
+                        OutlinedButton(onClick = { LinkService.send(context, LinkService.ACTION_STOP) }) {
+                            Text("Stop")
+                        }
+                    }
+                    if (hasDevice && !searching) {
+                        Button(
+                            onClick = { LinkService.send(context, LinkService.ACTION_START) },
+                            enabled = bluetoothAllowed,
+                        ) { Text("Reconnect") }
+                    }
+                }
             }
 
             OutlinedButton(
@@ -287,5 +337,163 @@ private fun SwitchRow(title: String, subtitle: String?, checked: Boolean, onChan
             }
         }
         Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
+
+// ----- trips -------------------------------------------------------------
+
+/** The saved trips, newest first; updates when the device sends a new one. */
+@Composable
+private fun rememberTrips(): List<Trip> {
+    val context = LocalContext.current
+    val store = remember { TripStore.get(context) }
+    var trips by remember { mutableStateOf(store.all()) }
+    DisposableEffect(store) {
+        val listener: () -> Unit = { trips = store.all() }
+        store.addListener(listener)
+        trips = store.all()
+        onDispose { store.removeListener(listener) }
+    }
+    return trips
+}
+
+private val dateFormat = DateTimeFormatter.ofPattern("EEE d MMM yyyy, h:mm a", Locale.getDefault())
+
+private fun formatDate(epochSeconds: Long): String =
+    dateFormat.format(Instant.ofEpochSecond(epochSeconds).atZone(ZoneId.systemDefault()))
+
+private fun formatKm(km: Double): String = String.format(Locale.getDefault(), "%.1f", km)
+
+private fun plural(n: Int, word: String): String = if (n == 1) "$n $word" else "$n ${word}s"
+
+@Composable
+private fun TripsCard(trips: List<Trip>, onOpenTrips: () -> Unit, onOpenTrip: (String) -> Unit) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("Trips", style = MaterialTheme.typography.titleMedium)
+            if (trips.isEmpty()) {
+                Text(
+                    "No trips yet. Each trip appears here after the car is switched off.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            trips.take(3).forEach { trip -> TripRow(trip) { onOpenTrip(trip.id) } }
+            if (trips.size > 3) {
+                TextButton(onClick = onOpenTrips) { Text("See all ${trips.size} trips") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TripRow(trip: Trip, onClick: () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+    ) {
+        Text(formatDate(trip.start), fontWeight = FontWeight.SemiBold)
+        Text(
+            "${formatKm(trip.km)} km · ${trip.minutes} min · top ${trip.maxKmh} km/h",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        if (trip.overspeed > 0) {
+            Text(
+                plural(trip.overspeed, "overspeed warning"),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TripsScreen(onBack: () -> Unit, onOpenTrip: (String) -> Unit) {
+    val trips = rememberTrips()
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+    ) {
+        TextButton(onClick = onBack) { Text("Back") }
+        Text("All trips", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+        if (trips.isEmpty()) {
+            Text("No trips yet.", modifier = Modifier.padding(top = 16.dp))
+        }
+        trips.forEachIndexed { i, trip ->
+            if (i > 0) HorizontalDivider()
+            TripRow(trip) { onOpenTrip(trip.id) }
+        }
+    }
+}
+
+@Composable
+private fun TripDetailScreen(id: String, onBack: () -> Unit) {
+    val trip = rememberTrips().firstOrNull { it.id == id }
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        TextButton(onClick = onBack) { Text("Back") }
+        if (trip == null) {
+            Text("This trip is no longer saved.")
+            return@Column
+        }
+        Text(formatDate(trip.start), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Summary", style = MaterialTheme.typography.titleMedium)
+                Text(trip.summary, style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    if (trip.summaryBy == "llm") "Last sentence written by the on-device AI"
+                    else "Standard summary",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (trip.ended == "power_loss") {
+                    Text(
+                        "This trip ended with a power cut, so its last minute may be missing.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Details", style = MaterialTheme.typography.titleMedium)
+                StatRow("Distance", "${formatKm(trip.km)} km")
+                StatRow("Trip time", plural(trip.minutes, "minute"))
+                StatRow("Driving time", plural(trip.movingMin, "minute"))
+                StatRow("Top speed", "${trip.maxKmh} km/h")
+                if (trip.avgKmh > 0) StatRow("Average speed while moving", "${trip.avgKmh} km/h")
+                StatRow("Stops along the way", "${trip.stops}")
+                StatRow("Overspeed warnings", "${trip.overspeed}", warn = trip.overspeed > 0)
+                if (trip.overspeedS > 0) StatRow("Time over the limit", "${trip.overspeedS} s", warn = true)
+                StatRow("Harsh braking", "${trip.harshBrake}", warn = trip.harshBrake > 0)
+                StatRow("Harsh acceleration", "${trip.harshAccel}", warn = trip.harshAccel > 0)
+                StatRow("Road signs announced", "${trip.signs}")
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatRow(label: String, value: String, warn: Boolean = false) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, modifier = Modifier.weight(1f))
+        Text(
+            value,
+            fontWeight = FontWeight.SemiBold,
+            color = if (warn) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+        )
     }
 }

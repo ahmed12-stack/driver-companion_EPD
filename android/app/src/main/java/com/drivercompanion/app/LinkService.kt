@@ -54,7 +54,7 @@ class LinkService : Service(), LocationListener {
         )
         if (!goForeground("Starting…")) return
         settings = AppSettings(this)
-        link = DeviceLink(this, settings) { s ->
+        link = DeviceLink(this, settings, TripStore.get(this)) { s ->
             LinkHub.publish(s)
             onLinkStatus(s)
         }
@@ -69,15 +69,25 @@ class LinkService : Service(), LocationListener {
         // Called again so the location type is added once that permission is granted.
         if (!goForeground(describe(link.status))) return START_NOT_STICKY
         when (intent?.action) {
-            ACTION_PAIR -> link.pairNew()
+            ACTION_PAIR -> {
+                settings.autoConnect = true
+                link.pairNew()
+            }
             ACTION_STOP -> {
+                // Remembered, so opening the app does not start searching again.
+                settings.autoConnect = false
                 link.stop()
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
                 return START_NOT_STICKY
             }
-            else -> link.start()
+            else -> {
+                settings.autoConnect = true
+                link.start()
+            }
         }
+        // Location may have been allowed after the link came up.
+        if (link.isReady) startLocation()
         return START_STICKY
     }
 
@@ -144,7 +154,8 @@ class LinkService : Service(), LocationListener {
     private fun startLocation() {
         if (locationOn || !hasLocation()) return
         val lm = getSystemService(LocationManager::class.java) ?: return
-        if (!lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) return
+        // Registered even if Location is switched off right now: fixes start
+        // arriving by themselves when the user turns it on.
         try {
             lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, this, Looper.getMainLooper())
             locationOn = true
@@ -161,7 +172,7 @@ class LinkService : Service(), LocationListener {
 
     override fun onLocationChanged(location: Location) {
         val kmh = if (location.hasSpeed()) location.speed * 3.6 else 0.0
-        link.sendLocation(location.latitude, location.longitude, kmh, location.accuracy.toDouble())
+        link.sendLocation(location.latitude, location.longitude, kmh, location.accuracy.toDouble(), location.time)
     }
 
     // Android 10 and older require these; newer versions provide defaults.

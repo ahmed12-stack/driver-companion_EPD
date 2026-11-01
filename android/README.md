@@ -21,7 +21,11 @@ To share it with teammates without a cable: *Build → Build App Bundle(s) / APK
 5. The card turns to **Connected**. Tap **Send test alert**: the Pi says "Driver Companion message from the app".
 6. Send yourself a WhatsApp message or SMS from another phone: the Pi announces it.
 
-After the first pairing, the app reconnects on its own whenever the device is powered and in range, while the status notification is showing.
+After the first pairing, the app reconnects on its own whenever the device is powered and in range, while the status notification is showing. **Stop** (while searching) or **Disconnect** turns that off until you tap **Reconnect**.
+
+## Trips
+
+When the car is switched off, the device sends the finished trip. It appears on the home screen under **Trips** (latest three, or *See all*). Tapping one shows the summary and the details: distance, trip and driving time, top and average speed, stops, overspeed warnings, harsh braking and acceleration, and signs announced. Trips are kept on the phone (last 200). The app confirms each one to the device only after saving it, so a trip lost on the way is sent again.
 
 ## What's in it
 
@@ -32,7 +36,8 @@ After the first pairing, the app reconnects on its own whenever the device is po
 | `LinkService.kt` | Background service holding the link; sends phone GPS once a second while connected |
 | `NotificationForwarder.kt` | Reads notifications; forwards chosen apps, SMS (default messages app) and incoming calls |
 | `AppSettings.kt` | Volume, read-text, quiet, calls, SMS, app list; copied to the device on change |
-| `MainActivity.kt` | The single screen |
+| `TripStore.kt` | Trips received from the device, saved on the phone |
+| `MainActivity.kt` | Home screen, trip list and trip detail |
 
 Message text is sent to the device only when *Read message text* is on; otherwise only the app name and sender leave the phone.
 
@@ -45,3 +50,4 @@ Message text is sent to the device only when *Read message text* is on; otherwis
 | Connected but nothing is spoken | Check Notification access is allowed, the app is ticked under *Apps to announce*, and Quiet mode is off |
 | "Device did not answer" | Restart the Pi service; check `journalctl -u driver-companion-ble -f` |
 | Stops after the phone sleeps | Settings → Apps → Driver Companion → Battery → *Unrestricted* |
+| No phone GPS on the device | Location allowed in the app and switched on in quick settings; the phone needs a fix (outdoors or by a window). The Pi log shows `phone GPS fixes arriving` once they start |

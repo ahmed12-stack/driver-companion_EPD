@@ -37,7 +37,7 @@ class Speaker:
         self._last_end = float("-inf")
         self._engine = engine if engine is not None else shutil.which("espeak-ng")
         if not self._engine:
-            log.warning("espeak-ng not found; speech will be printed instead")
+            log.warning("no speech engine in use; speech will be printed instead")
 
     def set_volume(self, level: int):
         self._volume = level

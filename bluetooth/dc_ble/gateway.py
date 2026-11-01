@@ -34,14 +34,19 @@ def clean_text(value, limit: int) -> str:
 
 class Gateway:
     def __init__(self, speaker, settings, send_status, device_name="DC-0000",
-                 clock=time.monotonic):
+                 clock=time.monotonic, send_trip=None, trips=None, on_fix=None):
         self.speaker = speaker
         self.settings = settings
         self.device_name = device_name
         self.pairing = False
         self.last_location = None
         self.mtu = MIN_MTU
+        self.trips = trips          # TripStore, or None
+        self.on_fix = on_fix        # called with (lat, lon, kmh, acc, ts) per phone GPS fix
+        self.session = False        # True after a hello on this connection
         self._send_status = send_status
+        self._send_trip = send_trip
+        self._gps_logged = False
         self._clock = clock
         self._ids = MessageIds()
         self._reassemblers = {
@@ -58,6 +63,8 @@ class Gateway:
         for r in self._reassemblers.values():
             r.reset()
         self.mtu = MIN_MTU
+        self.session = False
+        self._gps_logged = False
 
     # ----- inbound -----------------------------------------------------
 
@@ -79,7 +86,9 @@ class Gateway:
 
         seq = msg.get("seq") if isinstance(msg.get("seq"), int) else None
         kind = msg["t"]
-        log.info("received %s on %s (%d bytes)", kind, slot, len(body))  # never log content
+        # Never log content. GPS arrives every second, so only at debug level.
+        log.log(logging.DEBUG if kind == "loc" else logging.INFO,
+                "received %s on %s (%d bytes)", kind, slot, len(body))
         handler = self._HANDLERS.get((slot, kind))
         if handler is None:
             known = any(t == kind for _, t in self._HANDLERS)
@@ -93,8 +102,19 @@ class Gateway:
             self.send_error("VERSION", seq, f"device speaks protocol {PROTOCOL_VERSION}")
         self.send({
             "t": "hello", "seq": seq, "proto": PROTOCOL_VERSION,
-            "fw": FIRMWARE_VERSION, "dev": self.device_name, "unsynced": 0,
+            "fw": FIRMWARE_VERSION, "dev": self.device_name,
+            "unsynced": len(self.trips.unsynced()) if self.trips else 0,
         })
+        self.session = True
+        self.sync_trips()
+
+    def _on_trip_ack(self, msg, seq):
+        trip_id = msg.get("id")
+        if not isinstance(trip_id, str) or self.trips is None:
+            self.send_error("BAD_FIELD", seq, "trip_ack needs an id")
+            return
+        if self.trips.mark_synced(trip_id):
+            log.info("phone has trip %s", trip_id)
 
     def _on_settings(self, msg, seq):
         changes = {k: v for k, v in msg.items() if k not in ("t", "seq")}
@@ -146,10 +166,18 @@ class Gateway:
             return
         self.last_location = {"lat": lat, "lon": lon, "kmh": kmh, "acc": acc,
                               "received": self._clock()}
+        if not self._gps_logged:
+            log.info("phone GPS fixes arriving")
+            self._gps_logged = True
+        if self.on_fix is not None:
+            ts = msg.get("ts")
+            ts = float(ts) if isinstance(ts, (int, float)) and ts > 1e9 else time.time()
+            self.on_fix(lat, lon, kmh, acc, ts)
 
     _HANDLERS = {
         ("settings", "hello"): _on_hello,
         ("settings", "settings"): _on_settings,
+        ("settings", "trip_ack"): _on_trip_ack,
         ("notification", "notif"): _on_notif,
         ("notification", "call"): _on_call,
         ("location", "loc"): _on_loc,
@@ -171,6 +199,22 @@ class Gateway:
     def send(self, msg: dict):
         for packet in split(_encode(msg), self._ids.next(), self.mtu):
             self._send_status(packet)
+
+    def sync_trips(self):
+        """Send every trip the phone does not have yet, on Trip Out. A trip is
+        marked synced only when the phone answers with trip_ack, so anything
+        lost on the way is sent again at the next connection."""
+        if not self.session or self.trips is None or self._send_trip is None:
+            return
+        for trip in self.trips.unsynced():
+            msg = {"t": "trip", **{k: v for k, v in trip.items() if k != "synced"}}
+            try:
+                for packet in split(_encode(msg), self._ids.next(), self.mtu):
+                    self._send_trip(packet)
+            except FrameError:
+                log.exception("trip %s too large to send", trip.get("id"))
+                continue
+            log.info("sent trip %s to the phone", trip["id"])
 
     def send_error(self, code: str, seq, detail: str):
         log.warning("error %s: %s", code, detail)
