@@ -16,6 +16,10 @@ object LinkHub {
 
     private val listeners = CopyOnWriteArraySet<(LinkStatus) -> Unit>()
 
+    /** The last phone GPS fix sent to the device, for the status line in the app. */
+    @Volatile
+    var lastFix: GpsFix? = null
+
     /** Called on the main thread by the link. */
     fun publish(newStatus: LinkStatus) {
         status = newStatus
@@ -30,3 +34,6 @@ object LinkHub {
         listeners.remove(listener)
     }
 }
+
+/** accuracyM in metres; atMs is when the app sent it (phone clock). */
+data class GpsFix(val kmh: Double, val accuracyM: Double, val atMs: Long)

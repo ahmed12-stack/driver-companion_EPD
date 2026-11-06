@@ -20,6 +20,14 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import com.drivercompanion.app.ble.DeviceLink
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.drivercompanion.app.ble.LinkState
 import com.drivercompanion.app.ble.LinkStatus
 
@@ -46,6 +54,12 @@ class LinkService : Service(), LocationListener {
     private lateinit var settings: AppSettings
     private lateinit var link: DeviceLink
     private var locationOn = false
+    private var fused: FusedLocationProviderClient? = null
+    private val fusedCallback = object : LocationCallback() {
+        override fun onLocationResult(result: LocationResult) {
+            result.lastLocation?.let { this@LinkService.onLocationChanged(it) }
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -153,26 +167,50 @@ class LinkService : Service(), LocationListener {
 
     private fun startLocation() {
         if (locationOn || !hasLocation()) return
-        val lm = getSystemService(LocationManager::class.java) ?: return
         // Registered even if Location is switched off right now: fixes start
         // arriving by themselves when the user turns it on.
         try {
-            lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, this, Looper.getMainLooper())
+            if (hasPlayServices()) {
+                // Google's fused location (as Maps uses): GPS plus Wi-Fi and towers,
+                // a faster first fix and better among buildings. Speed comes from GPS.
+                val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000L)
+                    .setMinUpdateIntervalMillis(1000L)
+                    .setWaitForAccurateLocation(false)
+                    .build()
+                val client = LocationServices.getFusedLocationProviderClient(this)
+                client.requestLocationUpdates(request, fusedCallback, Looper.getMainLooper())
+                fused = client
+            } else {
+                val lm = getSystemService(LocationManager::class.java) ?: return
+                lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, this, Looper.getMainLooper())
+            }
             locationOn = true
         } catch (e: SecurityException) {
             Log.w(TAG, "location permission missing", e)
         }
     }
 
+    private fun hasPlayServices(): Boolean =
+        GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS
+
     private fun stopLocation() {
         if (!locationOn) return
-        getSystemService(LocationManager::class.java)?.removeUpdates(this)
+        val client = fused
+        if (client != null) {
+            client.removeLocationUpdates(fusedCallback)
+            fused = null
+        } else {
+            getSystemService(LocationManager::class.java)?.removeUpdates(this)
+        }
         locationOn = false
+        LinkHub.lastFix = null
     }
 
     override fun onLocationChanged(location: Location) {
         val kmh = if (location.hasSpeed()) location.speed * 3.6 else 0.0
-        link.sendLocation(location.latitude, location.longitude, kmh, location.accuracy.toDouble(), location.time)
+        val accuracy = if (location.hasAccuracy()) location.accuracy.toDouble() else 999.0
+        link.sendLocation(location.latitude, location.longitude, kmh, accuracy, location.time)
+        LinkHub.lastFix = GpsFix(kmh, accuracy, System.currentTimeMillis())
     }
 
     // Android 10 and older require these; newer versions provide defaults.

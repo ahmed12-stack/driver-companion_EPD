@@ -1,15 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- A road running to the horizon in graphite, amber lane marks, the device "speaking" above it. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
     <path
-        android:fillColor="#00000000"
-        android:pathData="M30,54a24,24 0 1,0 48,0a24,24 0 1,0 -48,0"
-        android:strokeWidth="5"
-        android:strokeColor="#FFFFFF" />
+        android:fillColor="#232325"
+        android:pathData="M38,78 L50,42 L58,42 L70,78 Z" />
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,40 L67,63 L41,63 Z" />
+        android:fillColor="#00000000"
+        android:pathData="M38,78 L50,42 M70,78 L58,42"
+        android:strokeColor="#EDEDED"
+        android:strokeLineCap="round"
+        android:strokeWidth="3" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,70 L54,75 M54,57 L54,62 M54,47 L54,50"
+        android:strokeColor="#F2B33D"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.4" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M48.34,32.34 A8,8 0 0,1 59.66,32.34"
+        android:strokeColor="#EDEDED"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.6" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M43.39,27.39 A15,15 0 0,1 64.61,27.39"
+        android:strokeAlpha="0.55"
+        android:strokeColor="#EDEDED"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.6" />
 </vector>

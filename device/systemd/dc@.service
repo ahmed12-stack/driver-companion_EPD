@@ -1,0 +1,18 @@
+# One Driver Companion module: dc@speech runs `python -m dc_speech`, and so on.
+# Options per module go in /etc/driver-companion/<module>.env as ARGS="...".
+[Unit]
+Description=Driver Companion module %i
+After=mosquitto.service bluetooth.service
+Requires=mosquitto.service
+
+[Service]
+WorkingDirectory=/opt/driver-companion/device
+Environment=DC_DATA_DIR=/var/lib/driver-companion
+EnvironmentFile=-/etc/driver-companion/%i.env
+ExecStart=/opt/driver-companion/venv/bin/python -m dc_%i $ARGS
+Restart=always
+RestartSec=2
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

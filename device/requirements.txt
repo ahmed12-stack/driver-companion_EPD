@@ -1,0 +1,2 @@
+dbus-fast>=2.21
+aiomqtt>=2.3,<3

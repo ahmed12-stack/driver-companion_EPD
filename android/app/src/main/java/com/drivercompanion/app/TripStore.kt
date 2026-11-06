@@ -30,6 +30,8 @@ data class Trip(
     val ended: String,
     val summary: String,
     val summaryBy: String,
+    /** The path, as the device's encoded polyline; empty for trips without one. */
+    val route: String = "",
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("id", id).put("start", start).put("end", end).put("km", km)
@@ -37,9 +39,11 @@ data class Trip(
         .put("avg_kmh", avgKmh).put("stops", stops).put("overspeed", overspeed)
         .put("overspeed_s", overspeedS).put("harsh_brake", harshBrake)
         .put("harsh_accel", harshAccel).put("signs", signs).put("ended", ended)
-        .put("summary", summary).put("summary_by", summaryBy)
+        .put("summary", summary).put("summary_by", summaryBy).put("route", route)
 
     companion object {
+        private const val MAX_ROUTE_CHARS = 16 * 1024
+
         /** Null if the message is not a usable trip. */
         fun fromJson(o: JSONObject): Trip? {
             val id = o.optString("id")
@@ -63,6 +67,7 @@ data class Trip(
                 ended = o.optString("ended", "ignition"),
                 summary = o.optString("summary").take(1000),
                 summaryBy = o.optString("summary_by", "template"),
+                route = o.optString("route").take(MAX_ROUTE_CHARS),
             )
         }
     }

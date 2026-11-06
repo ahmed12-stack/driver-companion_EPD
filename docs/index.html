@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.classList.add(matchMedia("(prefers-reduced-motion: reduce)").matches?"still":"moving")</script>
+<title>CARA Driver Companion — Prototype</title>
+<meta name="description" content="CARA Driver Companion DC-1: a student-built dashboard unit that reads road signs aloud, warns when you are over the limit, announces phone messages and sums up each drive. Working prototype, not for sale.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800&family=Overpass+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23F6F7F5'/%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%23D7373F' stroke-width='4'/%3E%3Ctext x='16' y='21' text-anchor='middle' font-family='Arial' font-weight='700' font-size='13' fill='%2323262A'%3E50%3C/text%3E%3C/svg%3E">
+<script>
+/* ---------------------------------------------------------------
+   SITE SETTINGS — fill these in; everything else updates itself.
+   email     : the product's support address
+   videoUrl  : the set-up video (YouTube link or any video link)
+   apk       : path of the Android app inside this folder
+---------------------------------------------------------------- */
+window.SITE = {
+  email: "cara.support.dc1@gmail.com",
+  videoUrl: "",
+  apk: "downloads/driver-companion.apk",
+  repo: "https://github.com/ahmed12-stack/driver-companion_EPD"
+};
+</script>
+<style>
+:root{
+  --tarmac:#23262A;      /* night road: dark sections */
+  --tarmac-2:#2E3237;    /* raised surfaces on the road */
+  --tarmac-3:#3A3F45;    /* hairlines on dark */
+  --concrete:#E2E3DE;    /* daytime kerb: light sections */
+  --paper:#F6F7F5;       /* sign white */
+  --ink:#1D2024;         /* text on light */
+  --ink-2:#4A5158;       /* secondary text on light */
+  --fog:#B7BCC1;         /* secondary text on dark */
+  --amber:#F2B33D;       /* lane marking: the one accent */
+  --red:#D7373F;         /* sign ring: speed only */
+  --green:#1E6B47;       /* direction-sign green: downloads */
+  --sans:"Overpass",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --mono:"Overpass Mono","Cascadia Mono","Roboto Mono",ui-monospace,Menlo,Consolas,monospace;
+  --wrap:1120px;
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--tarmac);color:var(--paper);font-family:var(--sans);font-size:18px;line-height:1.55;-webkit-font-smoothing:antialiased}
+img,svg{display:block;max-width:100%}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--amber);outline-offset:3px;border-radius:4px}
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 24px}
+h1,h2,h3{font-weight:800;line-height:1.1;margin:0;letter-spacing:-.01em}
+h2{font-size:clamp(30px,4vw,44px);max-width:20ch}
+h3{font-size:21px;line-height:1.25}
+p{margin:0}
+.lead{font-size:20px;max-width:58ch}
+.num{font-family:var(--mono);font-feature-settings:"tnum"}
+section{padding:104px 0}
+.light{background:var(--concrete);color:var(--ink)}
+.light .muted{color:var(--ink-2)}
+.muted{color:var(--fog)}
+.skip{position:absolute;left:-999px;top:8px;background:var(--amber);color:var(--ink);padding:8px 12px;z-index:10}
+.skip:focus{left:8px}
+
+/* ---------- top bar ---------- */
+.bar{position:sticky;top:0;z-index:5;background:rgba(35,38,42,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--tarmac-3)}
+.bar .wrap{display:flex;align-items:center;gap:28px;height:64px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:800;font-size:20px;letter-spacing:.02em}
+.brand small{font-weight:400;color:var(--fog);font-size:15px;letter-spacing:0}
+.nav{display:flex;gap:22px;margin-left:auto}
+.nav a{text-decoration:none;color:var(--fog);font-size:16px}
+.nav a:hover{color:var(--paper)}
+.proto{border:1.5px solid var(--amber);color:var(--amber);border-radius:999px;padding:2px 12px 0;font-size:14px;font-weight:600;white-space:nowrap}
+
+/* ---------- hero ---------- */
+.hero{padding:72px 0 0;overflow:hidden}
+.hero .wrap{display:grid;grid-template-columns:1.05fr 1fr;gap:48px;align-items:center}
+.caption{display:inline-block;background:rgba(0,0,0,.55);color:var(--paper);font-size:clamp(28px,3.4vw,40px);font-weight:600;padding:8px 18px 4px;border-radius:6px;min-height:1.6em;margin-bottom:28px}
+.caption .q{color:var(--amber)}
+.hero h1{font-size:clamp(40px,5.6vw,68px);max-width:13ch}
+.hero .lead{margin-top:22px;color:var(--fog)}
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px}
+.btn{display:inline-flex;align-items:center;gap:10px;height:52px;padding:2px 22px 0;border-radius:10px;font-weight:600;font-size:17px;text-decoration:none;border:1.5px solid transparent;cursor:pointer;font-family:inherit}
+.btn-primary{background:var(--amber);color:var(--ink)}
+.btn-primary:hover{background:#f6c25f}
+.btn-ghost{border-color:var(--tarmac-3);color:var(--paper);background:transparent}
+.btn-ghost:hover{border-color:var(--fog)}
+.road{width:100%;height:auto;aspect-ratio:560/520}
+.sign{transform-box:view-box;transform-origin:0 0}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+}
+
+/* ---------- prototype band ---------- */
+.band{background:var(--amber);color:var(--ink);padding:22px 0}
+.band .wrap{display:flex;gap:18px;align-items:baseline;flex-wrap:wrap}
+.band strong{font-size:20px}
+.band span{font-size:17px}
+
+/* ---------- what it does ---------- */
+.does{display:grid;grid-template-columns:repeat(2,1fr);gap:56px 64px;margin-top:56px}
+.does article{display:grid;grid-template-columns:64px 1fr;gap:20px;align-items:start}
+.does h3{margin-bottom:8px}
+.does p{color:var(--ink-2)}
+.icon{width:64px;height:64px}
+
+/* ---------- voice ---------- */
+.voice{display:grid;grid-template-columns:1fr 1.15fr;gap:64px;align-items:start}
+.lines{list-style:none;margin:0;padding:0;border-top:1px solid var(--tarmac-3)}
+.lines li{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid var(--tarmac-3)}
+.lines .said{font-size:22px;font-weight:600}
+.lines .when{display:block;font-size:15px;color:var(--fog);font-weight:400;margin-top:2px}
+.play{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--tarmac-3);background:transparent;color:var(--paper);cursor:pointer;display:grid;place-items:center}
+.play:hover{border-color:var(--amber);color:var(--amber)}
+.play[aria-pressed="true"]{background:var(--amber);border-color:var(--amber);color:var(--ink)}
+.note{font-size:15px;color:var(--fog);margin-top:18px}
+
+/* ---------- how it works ---------- */
+.layers{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:56px}
+.layer{background:var(--paper);border-radius:16px;padding:32px;border:1px solid #cfd1cb}
+.layer h3{font-size:24px}
+.layer .tag{font-size:15px;color:var(--ink-2);margin:6px 0 20px}
+.flow{list-style:none;margin:0;padding:0;counter-reset:f}
+.flow li{position:relative;padding:0 0 18px 34px}
+.flow li::before{content:"";position:absolute;left:8px;top:8px;width:10px;height:10px;border-radius:50%;background:var(--ink)}
+.flow li:last-child{padding-bottom:0}
+.figs{display:flex;flex-wrap:wrap;gap:28px 40px;margin-top:48px;padding-top:32px;border-top:1px solid #c6c8c2}
+.fig b{display:block;font-family:var(--mono);font-size:34px;font-weight:600;line-height:1.1}
+.fig span{font-size:15px;color:var(--ink-2)}
+
+/* ---------- set up: steps along the lane ---------- */
+.setup{display:grid;grid-template-columns:1fr 1.1fr;gap:64px;align-items:start}
+.steps{list-style:none;margin:40px 0 0;padding:0;position:relative}
+.steps::before{content:"";position:absolute;left:21px;top:8px;bottom:8px;width:4px;background:repeating-linear-gradient(var(--amber) 0 18px,transparent 18px 32px)}
+.steps li{position:relative;display:grid;grid-template-columns:46px 1fr;gap:18px;padding-bottom:30px}
+.steps li:last-child{padding-bottom:0}
+.stepn{width:46px;height:46px;border-radius:50%;background:var(--tarmac);border:2px solid var(--amber);display:grid;place-items:center;font-weight:800;font-size:19px;padding-top:3px;position:relative}
+.steps h3{margin:8px 0 4px}
+.steps p{color:var(--fog)}
+.video{background:#000;border-radius:16px;overflow:hidden;aspect-ratio:16/9;position:relative;border:1px solid var(--tarmac-3)}
+.video iframe,.video video{position:absolute;inset:0;width:100%;height:100%;border:0}
+.video .soon{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;color:var(--fog)}
+.video .soon b{display:block;color:var(--paper);font-size:22px;margin-top:14px}
+.video-cap{font-size:15px;color:var(--fog);margin-top:12px}
+
+/* ---------- downloads as direction signs ---------- */
+.gantry{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px}
+.dsign{display:flex;flex-direction:column;gap:6px;text-decoration:none;color:#fff;background:var(--green);border-radius:12px;padding:26px 26px 22px;box-shadow:inset 0 0 0 4px var(--green),inset 0 0 0 7px #fff;min-height:200px;transition:transform .2s var(--ease)}
+.dsign:hover{transform:translateY(-3px)}
+.dsign .arrow{width:34px;height:34px;margin-bottom:8px}
+.dsign strong{font-size:24px;line-height:1.15}
+.dsign span{font-size:16px;opacity:.88}
+.dsign .meta{margin-top:auto;font-family:var(--mono);font-size:14px;opacity:.8;padding-top:14px}
+.install{margin-top:28px;font-size:16px;color:var(--ink-2);max-width:72ch}
+
+/* ---------- specs ---------- */
+.specs{width:100%;border-collapse:collapse;margin-top:40px;font-size:17px}
+.specs th,.specs td{text-align:left;padding:14px 16px 12px 0;border-bottom:1px solid var(--tarmac-3);vertical-align:top}
+.specs th{width:32%;font-weight:600;color:var(--fog)}
+.specs-wrap{display:grid;grid-template-columns:1.3fr 1fr;gap:64px}
+.privacy{background:var(--tarmac-2);border-radius:16px;padding:32px;margin-top:40px}
+.privacy ul{margin:14px 0 0;padding-left:20px}
+.privacy li{margin:8px 0}
+
+/* ---------- roadmap ---------- */
+.road-ahead{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-top:48px;border-top:4px dashed var(--ink)}
+.road-ahead div{padding:22px 18px 0 0}
+.road-ahead b{display:block;font-size:18px;margin-bottom:6px}
+.road-ahead p{font-size:16px;color:var(--ink-2)}
+.done{color:var(--green);font-weight:600;font-size:15px}
+
+/* ---------- team ---------- */
+.team{display:grid;grid-template-columns:repeat(4,1fr);gap:28px;margin-top:48px}
+.person{border-top:3px solid var(--amber);padding-top:16px}
+.person b{display:block;font-size:20px}
+.person span{color:var(--fog);font-size:16px}
+.course{margin-top:40px;color:var(--fog);font-size:16px}
+
+/* ---------- contact + footer ---------- */
+.contact{display:flex;flex-wrap:wrap;gap:16px 40px;align-items:baseline;margin-top:24px;font-size:20px}
+.contact a{color:var(--amber)}
+footer{background:#1A1C1F;color:var(--fog);font-size:15px;padding:40px 0}
+footer .wrap{display:grid;gap:12px}
+
+/* ---------- small screens ---------- */
+@media (max-width:900px){
+  section{padding:72px 0}
+  .nav{display:none}
+  .hero .wrap,.voice,.setup,.specs-wrap,.layers{grid-template-columns:1fr}
+  .hero .wrap{gap:24px}
+  .does{grid-template-columns:1fr;gap:36px}
+  .gantry{grid-template-columns:1fr}
+  .road-ahead{grid-template-columns:1fr 1fr;row-gap:12px}
+  .team{grid-template-columns:1fr 1fr}
+}
+@media (max-width:520px){
+  body{font-size:17px}
+  .road-ahead,.team{grid-template-columns:1fr}
+  .proto{display:none}
+}
+
+/* =================== MOTION =================== */
+/* scroll progress: the lane line under the top bar */
+.progress{position:absolute;left:0;right:0;bottom:-1px;height:3px;background:var(--amber);transform-origin:0 50%;transform:scaleX(var(--p,0))}
+.nav a{position:relative;transition:color .25s var(--ease)}
+.nav a::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:2px;background:var(--amber);transform:scaleX(0);transform-origin:0 50%;transition:transform .35s var(--ease)}
+.nav a.on{color:var(--paper)}
+.nav a.on::after{transform:scaleX(1)}
+
+/* hero: headlights on, then the words */
+.mask{display:block;overflow:hidden;padding-bottom:.08em;margin-bottom:-.08em}
+.ln{display:block}
+html.moving .ln{transform:translateY(105%);transition:transform 1.1s var(--ease);transition-delay:var(--d,0s)}
+html.moving .rise{opacity:0;transform:translateY(16px);transition:opacity .9s var(--ease),transform .9s var(--ease);transition-delay:var(--d,0s)}
+html.moving .road{opacity:0;transition:opacity 1.4s var(--ease) .1s}
+html.moving.loaded .ln,html.moving.loaded .rise{opacity:1;transform:none}
+html.moving.loaded .road{opacity:1}
+.beams{opacity:1}
+html.moving .beams{opacity:0}
+html.moving.loaded .beams{animation:lights 1.6s .55s forwards}
+@keyframes lights{0%{opacity:0}8%{opacity:.85}14%{opacity:.1}22%{opacity:1}100%{opacity:1}}
+.caption .cursor{display:inline-block;width:.06em;height:.9em;background:var(--amber);margin-left:.06em;vertical-align:-.08em;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* features light up like signs caught in headlights */
+html.moving .does article{opacity:0;transform:translateY(14px);transition:opacity .8s var(--ease),transform .8s var(--ease);transition-delay:calc(var(--i,0)*130ms)}
+html.moving .does article .icon{filter:brightness(.3) grayscale(1);transition:filter 1s var(--ease);transition-delay:calc(var(--i,0)*130ms + .3s)}
+html.moving .does.in article{opacity:1;transform:none}
+html.moving .does.in article .icon{filter:none}
+
+/* voice: equaliser while speaking */
+.eq{display:none;gap:3px;align-items:flex-end;height:16px}
+.eq i{display:block;width:3px;height:100%;background:currentColor;border-radius:1px;animation:eq .9s ease-in-out infinite;transform-origin:50% 100%}
+.eq i:nth-child(2){animation-delay:-.3s}.eq i:nth-child(3){animation-delay:-.6s}
+@keyframes eq{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
+.play[aria-pressed="true"] svg{display:none}
+.play[aria-pressed="true"] .eq{display:flex}
+.lines .said{transition:color .3s var(--ease)}
+.lines li.speaking .said{color:var(--amber)}
+
+/* how a sign is confirmed: 3 of 5 */
+.vote{margin-top:48px;background:var(--tarmac);color:var(--paper);border-radius:16px;padding:30px 32px;display:grid;grid-template-columns:1fr auto;gap:28px 40px;align-items:center}
+.vote-head{grid-column:1/-1}
+.vote-head p{color:var(--fog);font-size:16px;margin-top:6px}
+.frames{display:flex;gap:12px;flex-wrap:wrap}
+.frame{width:76px;height:58px;border-radius:8px;background:#1A1C1F;border:1.5px solid #3A3F45;display:grid;place-items:center;position:relative;transition:border-color .35s var(--ease)}
+.frame.seen{border-color:var(--amber)}
+.frame.miss{border-color:#5A6067}
+.fr-sign{width:32px;height:32px;border-radius:50%;background:#F6F7F5;box-shadow:inset 0 0 0 5px #D7373F;color:#1D2024;font:800 12px/34px var(--sans);text-align:center;opacity:0;transform:scale(.5);transition:opacity .35s var(--ease),transform .45s var(--ease),filter .35s}
+.frame.seen .fr-sign{opacity:1;transform:none}
+.frame.miss .fr-sign{opacity:.45;transform:none;filter:blur(2.5px)}
+.fr-res{position:absolute;bottom:-24px;left:0;right:0;text-align:center;font-size:13px;color:var(--fog);opacity:0;transition:opacity .3s}
+.frame.seen .fr-res,.frame.miss .fr-res{opacity:1}
+.frame.seen .fr-res{color:var(--amber)}
+.verdict{display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-width:230px}
+.tally{font-family:var(--mono);font-size:15px;color:var(--fog)}
+.result{background:rgba(0,0,0,.55);border-radius:6px;padding:6px 14px 2px;font-size:24px;font-weight:600;opacity:.15;transform:scale(.94);transform-origin:0 50%;transition:opacity .4s var(--ease),transform .5s var(--ease),box-shadow .4s}
+.result.ok{opacity:1;transform:none;box-shadow:0 0 0 2px var(--amber)}
+.vote .frames{padding-bottom:22px}
+
+/* steps: the lane fills as you read */
+.steps::after{content:"";position:absolute;left:21px;top:8px;width:4px;height:calc((100% - 16px)*var(--sp,0));background:var(--amber);border-radius:2px}
+.stepn{z-index:1;transition:background .35s var(--ease),color .35s var(--ease)}
+.steps li.on .stepn{background:var(--amber);color:var(--ink)}
+
+/* download signs swing down from the gantry, and shine */
+.dsign{position:relative;overflow:hidden}
+.dsign::after{content:"";position:absolute;top:-30%;bottom:-30%;left:-60%;width:45%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.26),transparent);transform:skewX(-14deg);transition:transform .9s var(--ease);pointer-events:none}
+.dsign:hover::after,.dsign:focus-visible::after{transform:translateX(480%) skewX(-14deg)}
+.dsign .arrow{transition:transform .35s var(--ease)}
+.dsign:hover .arrow{transform:translateY(4px)}
+html.moving .gantry .dsign{opacity:0;transform:perspective(700px) rotateX(-75deg);transform-origin:50% 0;transition:transform 1.1s var(--ease),opacity .6s var(--ease);transition-delay:calc(var(--i,0)*140ms)}
+html.moving .gantry.in .dsign{opacity:1;transform:none}
+html.moving .gantry.in .dsign:hover{transform:translateY(-3px)}
+
+/* road ahead: the car drives to where we are today */
+.road-ahead{position:relative}
+.car{position:absolute;top:-15px;left:-40px;width:40px;height:26px;transition:left 2.2s var(--ease) .2s}
+.road-ahead.in .car{left:calc(10% - 20px)}
+html.still .car{left:calc(10% - 20px)}
+
+/* figures count up */
+.fig b{min-width:2ch}
+
+@media (max-width:520px){
+  .frame{width:52px;height:44px}.fr-sign{width:26px;height:26px;line-height:28px;font-size:10px}
+  .vote{padding:24px 20px}
+  .road-ahead.in .car,html.still .car{left:0}
+}
+@media (prefers-reduced-motion: reduce){
+  .eq i,.caption .cursor{animation:none}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="CARA Driver Companion, home">
+      <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#F6F7F5"/><circle cx="16" cy="16" r="13" fill="none" stroke="#D7373F" stroke-width="4"/><text x="16" y="21" text-anchor="middle" font-family="Overpass,Arial" font-weight="800" font-size="12" fill="#23262A">50</text></svg>
+      CARA <small>Driver Companion</small>
+    </a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#what">What it does</a>
+      <a href="#how">How it works</a>
+      <a href="#setup">Set up</a>
+      <a href="#downloads">Downloads</a>
+      <a href="#team">Team</a>
+    </nav>
+    <span class="proto">Prototype</span>
+  </div>
+  <span class="progress" aria-hidden="true"></span>
+</header>
+
+<main id="main">
+<!-- ===================== HERO ===================== -->
+<section class="hero" id="top" aria-labelledby="h-hero">
+  <div class="wrap">
+    <div>
+      <p class="caption rise" style="--d:.15s" aria-live="polite"><span class="q">“</span><span id="said">Speed limit 50.</span><span class="q">”</span></p>
+      <h1 id="h-hero"><span class="mask"><span class="ln" style="--d:.3s">A dashboard</span></span><span class="mask"><span class="ln" style="--d:.42s">companion that</span></span><span class="mask"><span class="ln" style="--d:.54s">reads the road aloud</span></span></h1>
+      <p class="lead rise" style="--d:.75s">CARA watches the road through a small camera and speaks the signs, warns you when you are over the limit, reads out who is messaging, and sums up each drive. Your eyes stay on the road.</p>
+      <div class="cta rise" style="--d:.9s">
+        <a class="btn btn-primary" href="#setup">Watch the set-up video</a>
+        <a class="btn btn-ghost" href="#downloads">Get the manual and app</a>
+      </div>
+    </div>
+    <svg class="road" viewBox="0 0 560 520" role="img" aria-label="A road at night with a speed-limit sign passing on the left">
+      <defs>
+        <radialGradient id="glow" cx="50%" cy="23%" r="60%"><stop offset="0" stop-color="#3A3F45" stop-opacity=".55"/><stop offset="1" stop-color="#23262A" stop-opacity="0"/></radialGradient>
+        <linearGradient id="beam" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#FFF6D8" stop-opacity=".30"/><stop offset=".55" stop-color="#FFF6D8" stop-opacity=".10"/><stop offset="1" stop-color="#FFF6D8" stop-opacity="0"/></linearGradient>
+        <linearGradient id="tar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#34383D"/><stop offset="1" stop-color="#2A2D31"/></linearGradient>
+        <clipPath id="roadclip"><path d="M262 120 L298 120 L520 520 L40 520 Z"/></clipPath>
+      </defs>
+      <rect width="560" height="520" fill="url(#glow)"/>
+      <path d="M262 120 L298 120 L520 520 L40 520 Z" fill="url(#tar)"/>
+      <path d="M262 120 L40 520" stroke="#F6F7F5" stroke-opacity=".55" stroke-width="3"/>
+      <path d="M298 120 L520 520" stroke="#F6F7F5" stroke-opacity=".55" stroke-width="3"/>
+      <g clip-path="url(#roadclip)">
+        <path id="dashes" fill="#F2B33D"/>
+      </g>
+      <path id="studs" fill="#F6F7F5"/>
+      <path class="beams" d="M60 520 L250 205 L310 205 L500 520 Z" fill="url(#beam)"/>
+      <line x1="0" y1="120" x2="560" y2="120" stroke="#3A3F45" stroke-width="1.5"/>
+      <!-- the passing sign (animated by script) -->
+      <g id="signwrap" class="sign">
+        <rect x="-3" y="0" width="6" height="150" fill="#9AA0A6"/>
+        <g id="signface"></g>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<div class="band" role="note">
+  <div class="wrap">
+    <strong>A working student prototype, not a product for sale.</strong>
+    <span>Built and tested by EPD Group 7 at KIIT, Bhubaneswar, as part of the Electronic Product Development course.</span>
+  </div>
+</div>
+
+<!-- ===================== WHAT IT DOES ===================== -->
+<section class="light" id="what" aria-labelledby="h-what">
+  <div class="wrap">
+    <h2 id="h-what">Four things it does while you drive</h2>
+    <div class="does">
+      <article style="--i:0">
+        <svg class="icon" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="#F6F7F5"/><circle cx="32" cy="32" r="26" fill="none" stroke="#D7373F" stroke-width="7"/><text x="32" y="40" text-anchor="middle" font-family="Overpass,Arial" font-weight="800" font-size="21" fill="#1D2024">50</text></svg>
+        <div><h3>Speaks road signs</h3><p>Reads 20 common Indian road signs, from speed limits to school zones and speed breakers, and says each one once.</p></div>
+      </article>
+      <article style="--i:1">
+        <svg class="icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 5 L60 56 L4 56 Z" fill="#F6F7F5" stroke="#D7373F" stroke-width="6" stroke-linejoin="round"/><path d="M32 22 v18" stroke="#1D2024" stroke-width="6" stroke-linecap="round"/><circle cx="32" cy="48" r="3.6" fill="#1D2024"/></svg>
+        <div><h3>Warns when you are too fast</h3><p>Uses your phone's GPS speed. More than 5&nbsp;km/h over the last limit for 3 seconds, and it says “Slow down. Speed limit 50.”</p></div>
+      </article>
+      <article style="--i:2">
+        <svg class="icon" viewBox="0 0 64 64" aria-hidden="true"><rect x="4" y="8" width="56" height="48" rx="6" fill="#2457A5"/><rect x="8" y="12" width="48" height="40" rx="3" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M18 24h28M18 32h28M18 40h16" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg>
+        <div><h3>Reads out who is messaging</h3><p>WhatsApp, text messages and calls from the apps you choose, spoken by name, so you never look down at the phone.</p></div>
+      </article>
+      <article style="--i:3">
+        <svg class="icon" viewBox="0 0 64 64" aria-hidden="true"><rect x="4" y="8" width="56" height="48" rx="6" fill="#1E6B47"/><rect x="8" y="12" width="48" height="40" rx="3" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M20 44 V26 M20 26 l-7 8 M20 26 l7 8" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M36 26h12M36 34h12M36 42h8" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg>
+        <div><h3>Sums up every drive</h3><p>When you park, it speaks the distance, time and warnings, with one remark from a small AI inside the unit. The route appears on a map in the app.</p></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== VOICE ===================== -->
+<section id="voice" aria-labelledby="h-voice">
+  <div class="wrap voice">
+    <div>
+      <h2 id="h-voice">It has no screen. It talks.</h2>
+      <p class="lead muted" style="margin-top:20px">Everything the unit tells you is spoken in a clear, natural voice, one message at a time and the most urgent first: overspeed, then road signs, then calls, then messages.</p>
+      <p class="note">Tap a line to hear it in your browser's voice. The unit itself uses a natural British-English female voice that runs on the device, without the internet.</p>
+    </div>
+    <ul class="lines" id="lines">
+      <li><span class="said">“Speed limit 50.”<span class="when">A speed-limit sign was read</span></span><button class="play" aria-pressed="false" aria-label="Hear: Speed limit 50"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><span class="eq" aria-hidden="true"><i></i><i></i><i></i></span></button></li>
+      <li><span class="said">“Slow down. Speed limit 50.”<span class="when">You have been over the limit for 3 seconds</span></span><button class="play" aria-pressed="false" aria-label="Hear: Slow down. Speed limit 50"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><span class="eq" aria-hidden="true"><i></i><i></i><i></i></span></button></li>
+      <li><span class="said">“School ahead.”<span class="when">A school-zone sign was read</span></span><button class="play" aria-pressed="false" aria-label="Hear: School ahead"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><span class="eq" aria-hidden="true"><i></i><i></i><i></i></span></button></li>
+      <li><span class="said">“WhatsApp message from Rahul.”<span class="when">A message from an app you chose</span></span><button class="play" aria-pressed="false" aria-label="Hear: WhatsApp message from Rahul"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><span class="eq" aria-hidden="true"><i></i><i></i><i></i></span></button></li>
+      <li><span class="said">“You drove 6.3 kilometres in 18 minutes, with one overspeed warning.”<span class="when">The trip summary, when you park</span></span><button class="play" aria-pressed="false" aria-label="Hear the trip summary"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><span class="eq" aria-hidden="true"><i></i><i></i><i></i></span></button></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===================== HOW IT WORKS ===================== -->
+<section class="light" id="how" aria-labelledby="h-how">
+  <div class="wrap">
+    <h2 id="h-how">Two layers: one fast, one thoughtful</h2>
+    <p class="lead muted" style="margin-top:20px">Everything runs inside the unit, on a Raspberry Pi 3B+. Each feature is its own small program, and they talk to each other through a shared message board, so one can restart without stopping the others.</p>
+    <div class="layers">
+      <div class="layer">
+        <h3>Reflex layer</h3>
+        <p class="tag">While you drive, in a fraction of a second</p>
+        <ol class="flow">
+          <li>The camera looks at the road 15 times a second.</li>
+          <li>Our own neural network, trained from scratch, picks out sign shapes and names them.</li>
+          <li>A sign counts only when it is seen in 3 of 5 pictures, so one blurry frame cannot trigger a false alert.</li>
+          <li>The phrase is ready-made, so speech starts at once.</li>
+        </ol>
+      </div>
+      <div class="layer">
+        <h3>Reflective layer</h3>
+        <p class="tag">When you park, in a few seconds</p>
+        <ol class="flow">
+          <li>The trip log adds up distance, time, stops, warnings and signs.</li>
+          <li>A fixed sentence states the facts, so the numbers are always right.</li>
+          <li>A small language model (0.5 billion parameters) running on the unit adds one friendly remark.</li>
+          <li>The trip and its route go to the phone over Bluetooth.</li>
+        </ol>
+      </div>
+    </div>
+    <div class="vote" id="vote">
+      <div class="vote-head"><h3>How one sign is confirmed</h3><p>Five pictures in a row. When three of them agree, the unit speaks; one blurry picture is not enough.</p></div>
+      <div class="frames" aria-hidden="true">
+        <div class="frame"><span class="fr-sign">50</span><span class="fr-res"></span></div>
+        <div class="frame"><span class="fr-sign">50</span><span class="fr-res"></span></div>
+        <div class="frame"><span class="fr-sign">50</span><span class="fr-res"></span></div>
+        <div class="frame"><span class="fr-sign">50</span><span class="fr-res"></span></div>
+        <div class="frame"><span class="fr-sign">50</span><span class="fr-res"></span></div>
+      </div>
+      <div class="verdict"><span class="tally" id="tally">Pictures agreeing: 0 of 5</span><span class="result" id="result">“Speed limit 50.”</span></div>
+    </div>
+    <div class="figs">
+      <div class="fig"><b data-to="20">20</b><span>road-sign types</span></div>
+      <div class="fig"><b data-to="60" data-pre="~" data-suf="&nbsp;ms">~60&nbsp;ms</b><span>to check one picture</span></div>
+      <div class="fig"><b>3 of 5</b><span>pictures must agree</span></div>
+      <div class="fig"><b>0</b><span>photos or videos saved</span></div>
+      <div class="fig"><b data-to="100" data-suf="%">100%</b><span>offline on the unit</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SET UP ===================== -->
+<section id="setup" aria-labelledby="h-setup">
+  <div class="wrap setup">
+    <div>
+      <h2 id="h-setup">Ready in four steps</h2>
+      <ol class="steps">
+        <li><span class="stepn">1</span><div><h3>Connect power</h3><p>Plug the cable into the unit and a power bank. After about a minute it says “Self test passed. System ready.”</p></div></li>
+        <li><span class="stepn">2</span><div><h3>Install the app</h3><p>Download the Driver Companion app below and allow the four permissions it asks for.</p></div></li>
+        <li><span class="stepn">3</span><div><h3>Pair your phone</h3><p>Hold the PAIR button for 5 seconds, tap Pair in the app and type the code the unit speaks.</p></div></li>
+        <li><span class="stepn">4</span><div><h3>Drive</h3><p>Place the unit on the dashboard facing the road. Switch TRIP on when you set off and off when you park.</p></div></li>
+      </ol>
+    </div>
+    <div>
+      <div class="video" id="video">
+        <div class="soon">
+          <div>
+            <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true" style="margin:auto"><circle cx="32" cy="32" r="30" fill="none" stroke="#3A3F45" stroke-width="2"/><path d="M26 20v24l19-12z" fill="#B7BCC1"/></svg>
+            <b>Set-up video coming soon</b>
+            <span>About two minutes: power, app, pairing and a first drive.</span>
+          </div>
+        </div>
+      </div>
+      <p class="video-cap">The same video opens from the code on the Quick Start Guide.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== DOWNLOADS ===================== -->
+<section class="light" id="downloads" aria-labelledby="h-dl">
+  <div class="wrap">
+    <h2 id="h-dl">Downloads</h2>
+    <div class="gantry">
+      <a class="dsign" style="--i:0" id="dl-apk" href="downloads/driver-companion.apk" download>
+        <svg class="arrow" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 4v22M8 18l9 9 9-9" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <strong>Android app</strong><span>Driver Companion, for Android 8.0 or newer</span>
+        <span class="meta">APK · version 0.3.0</span>
+      </a>
+      <a class="dsign" style="--i:1" href="manuals/CARA_DC-1_User_Manual.pdf">
+        <svg class="arrow" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 4v22M8 18l9 9 9-9" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <strong>User manual</strong><span>Safety, set-up, every feature, troubleshooting</span>
+        <span class="meta">PDF · 36 pages</span>
+      </a>
+      <a class="dsign" style="--i:2" href="manuals/CARA_DC-1_Quick_Start_Guide.pdf">
+        <svg class="arrow" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 4v22M8 18l9 9 9-9" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <strong>Quick start guide</strong><span>One page: set up in four steps</span>
+        <span class="meta">PDF · 1 page</span>
+      </a>
+    </div>
+    <p class="install">Installing the app: open the downloaded file and allow installs from your browser if Android asks. The app is not in the Play Store yet, so Play Protect may warn you; tap <em>More details</em>, then <em>Install anyway</em>.</p>
+  </div>
+</section>
+
+<!-- ===================== SPECS + PRIVACY ===================== -->
+<section id="specs" aria-labelledby="h-specs">
+  <div class="wrap specs-wrap">
+    <div>
+      <h2 id="h-specs">Inside the DC-1</h2>
+      <table class="specs">
+        <tr><th scope="row">Controller</th><td>Raspberry Pi 3B+, quad-core 1.4&nbsp;GHz, 1&nbsp;GB</td></tr>
+        <tr><th scope="row">Camera</th><td>5&nbsp;MP module; signs read at <span class="num">640 × 480</span>, 15 frames a second</td></tr>
+        <tr><th scope="row">Sign model</th><td>Our own small neural network, 20 classes from the IRC:67 sign code</td></tr>
+        <tr><th scope="row">Speed</th><td>Your phone's GPS, sent over Bluetooth once a second</td></tr>
+        <tr><th scope="row">Sound</th><td>3&nbsp;W speaker, digital class-D amplifier, three volume levels</td></tr>
+        <tr><th scope="row">Voice</th><td>Natural female voice generated on the unit</td></tr>
+        <tr><th scope="row">Trip remark</th><td>Qwen2.5 0.5B language model, on the unit</td></tr>
+        <tr><th scope="row">Phone link</th><td>Bluetooth Low Energy, paired with a spoken 6-digit code</td></tr>
+        <tr><th scope="row">Power</th><td>5&nbsp;V USB, from a power bank or a car USB charger</td></tr>
+        <tr><th scope="row">App</th><td>Android 8.0 or newer; keeps your last 200 trips</td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="privacy">
+        <h3>Private by design</h3>
+        <ul>
+          <li>No internet needed. Nothing leaves the car except to your own paired phone.</li>
+          <li>The camera never records. No photos or video are stored.</li>
+          <li>Messages are spoken and forgotten; their text is never saved.</li>
+          <li>Only a phone that typed the spoken code can connect.</li>
+        </ul>
+      </div>
+      <p class="note" style="margin-top:24px">CARA is a driver aid. It can miss or misread a sign, especially at night, in rain or in glare. The road signs and your own attention always come first.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ROADMAP ===================== -->
+<section class="light" id="next" aria-labelledby="h-next">
+  <div class="wrap">
+    <h2 id="h-next">The road ahead</h2>
+    <p class="lead muted" style="margin-top:20px">What works today, and what we plan to add next.</p>
+    <div class="road-ahead">
+      <svg class="car" viewBox="0 0 40 26" aria-hidden="true"><rect x="2" y="3" width="34" height="20" rx="7" fill="#1D2024"/><rect x="21" y="6" width="8" height="14" rx="2" fill="#6B7178"/><rect x="7" y="6" width="6" height="14" rx="2" fill="#6B7178"/><rect x="35" y="5" width="4" height="4" rx="1" fill="#F2B33D"/><rect x="35" y="17" width="4" height="4" rx="1" fill="#F2B33D"/></svg>
+      <div><span class="done">Working now</span><b>Signs, speed, messages, trips</b><p>Tested on the real unit with the phone's GPS.</p></div>
+      <div><span class="muted">Planned</span><b>Own GPS module</b><p>A built-in receiver, so speed works without the phone.</p></div>
+      <div><span class="muted">Planned</span><b>Motion sensor</b><p>Measures harsh braking and acceleration, and spots potholes.</p></div>
+      <div><span class="muted">Planned</span><b>Ignition wire</b><p>Trips start and end with the car key instead of a switch.</p></div>
+      <div><span class="muted">Planned</span><b>Updates over the air</b><p>New signs and software sent through the app.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TEAM ===================== -->
+<section id="team" aria-labelledby="h-team">
+  <div class="wrap">
+    <h2 id="h-team">Built by EPD Group 7</h2>
+    <div class="team">
+      <div class="person"><b>Asir Ahmed</b><span>Group lead; sign-reading vision pipeline</span></div>
+      <div class="person"><b>Amrit</b><span>Sensors and speed logic</span></div>
+      <div class="person"><b>Abhay</b><span>Speech and alert system</span></div>
+      <div class="person"><b>Anirudha</b><span>Language model and documentation</span></div>
+    </div>
+    <p class="course">Electronic Product Development (Sessional), School of Electronics Engineering, KIIT Deemed to be University, Bhubaneswar.</p>
+    <h3 style="margin-top:64px" id="contact">Questions or feedback</h3>
+    <div class="contact">
+      <span id="mail">Email address coming soon</span>
+      <a id="repo" href="https://github.com/ahmed12-stack/driver-companion_EPD">Source code on GitHub</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>CARA Driver Companion, model DC-1. An educational prototype: not certified and not for sale.</p>
+    <p>Raspberry Pi is a trademark of Raspberry Pi Ltd; Android of Google LLC; WhatsApp of Meta Platforms, Inc. Maps in the app © OpenStreetMap contributors.</p>
+    <p>© 2026 EPD Group 7, KIIT.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var S = window.SITE || {};
+
+  /* --- settings: email, links, video --- */
+  if (S.email) {
+    var m = document.getElementById('mail');
+    var a = document.createElement('a'); a.href = 'mailto:' + S.email; a.textContent = S.email;
+    m.replaceWith(a);
+  }
+  if (S.apk) document.getElementById('dl-apk').setAttribute('href', S.apk);
+  if (S.repo) document.getElementById('repo').setAttribute('href', S.repo);
+  if (S.videoUrl) {
+    var box = document.getElementById('video'), url = S.videoUrl, id = null;
+    var yt = url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/);
+    if (yt) id = yt[1];
+    box.innerHTML = '';
+    if (id) {
+      var f = document.createElement('iframe');
+      f.src = 'https://www.youtube-nocookie.com/embed/' + id;
+      f.title = 'CARA set-up video'; f.allow = 'accelerometer; encrypted-media; picture-in-picture'; f.allowFullscreen = true;
+      box.appendChild(f);
+    } else if (/\.(mp4|webm)(\?|$)/i.test(url)) {
+      var v = document.createElement('video'); v.src = url; v.controls = true; v.preload = 'metadata';
+      box.appendChild(v);
+    } else {
+      box.innerHTML = '<a class="soon" href="' + url + '" target="_blank" rel="noopener"><div><b>Watch the set-up video</b><span>Opens in a new tab</span></div></a>';
+    }
+  }
+
+  /* --- hero: the road moves in perspective; a sign passes and its words appear --- */
+  var SIGNS = [
+    {said:'Speed limit 50.', face:'<circle r="44" fill="#F6F7F5"/><circle r="38" fill="none" stroke="#D7373F" stroke-width="11"/><text y="12" text-anchor="middle" font-family="Overpass,Arial" font-weight="800" font-size="34" fill="#1D2024">50</text>'},
+    {said:'School ahead.', face:'<path d="M0 -46 L48 38 L-48 38 Z" fill="#F6F7F5" stroke="#D7373F" stroke-width="9" stroke-linejoin="round"/><circle cx="-8" cy="-4" r="5" fill="#1D2024"/><circle cx="10" cy="0" r="4.5" fill="#1D2024"/><path d="M-8 2 l-6 22 M-8 2 l5 22 M10 5 l-4 19 M10 5 l5 19 M-8 8 l18 2" stroke="#1D2024" stroke-width="4" stroke-linecap="round"/>'},
+    {said:'Speed breaker ahead.', face:'<path d="M0 -46 L48 38 L-48 38 Z" fill="#F6F7F5" stroke="#D7373F" stroke-width="9" stroke-linejoin="round"/><path d="M-26 22 h12 q14 -26 28 0 h12" stroke="#1D2024" stroke-width="6" fill="none" stroke-linecap="round"/>'},
+    {said:'Speed limit 30.', face:'<circle r="44" fill="#F6F7F5"/><circle r="38" fill="none" stroke="#D7373F" stroke-width="11"/><text y="12" text-anchor="middle" font-family="Overpass,Arial" font-weight="800" font-size="34" fill="#1D2024">30</text>'}
+  ];
+  var wrap = document.getElementById('signwrap'), face = document.getElementById('signface'), said = document.getElementById('said');
+  var dashes = document.getElementById('dashes'), studs = document.getElementById('studs');
+  var still = document.documentElement.classList.contains('still');
+
+  function drawRoad(off){                      // off: 0..1, how far the car has moved
+    var d = '', N = 9, k, t0, t1, e0, e1, y0, y1, w0, w1;
+    for (k = 0; k < N; k++){
+      t0 = (k / N + off) % 1; t1 = Math.min(1.02, t0 + 0.05);
+      e0 = t0 * t0; e1 = t1 * t1; y0 = 120 + 400 * e0; y1 = 120 + 400 * e1; w0 = 0.5 + e0 * 6; w1 = 0.5 + e1 * 6;
+      d += 'M' + (280 - w0) + ' ' + y0 + 'L' + (280 + w0) + ' ' + y0 + 'L' + (280 + w1) + ' ' + y1 + 'L' + (280 - w1) + ' ' + y1 + 'Z';
+    }
+    dashes.setAttribute('d', d);
+    var c = '', M = 8, t, e, y, r, xl, xr;      // reflective road studs just inside each edge
+    for (k = 0; k < M; k++){
+      t = (k / M + off) % 1; e = t * t; y = 120 + 400 * e; r = 0.3 + e * 3.6;
+      xl = 262 + (40 - 262) * e + 4 + e * 14; xr = 298 + (520 - 298) * e - 4 - e * 14;
+      c += 'M' + (xl - r) + ' ' + y + 'a' + r + ' ' + r + ' 0 1 0 ' + 2 * r + ' 0a' + r + ' ' + r + ' 0 1 0 ' + (-2 * r) + ' 0';
+      c += 'M' + (xr - r) + ' ' + y + 'a' + r + ' ' + r + ' 0 1 0 ' + 2 * r + ' 0a' + r + ' ' + r + ' 0 1 0 ' + (-2 * r) + ' 0';
+    }
+    studs.setAttribute('d', c);
+  }
+  function place(t){                            // t: 0 at the horizon, 1 passing the camera
+    var e = t * t, x = 250 - e * 330, base = 122 + e * 400, sc = 0.08 + e * 1.5;
+    wrap.setAttribute('transform', 'translate(' + x + ' ' + (base - 150 * sc) + ') scale(' + sc + ')');
+    wrap.setAttribute('opacity', t > 0.93 ? (1 - t) / 0.07 : Math.min(1, t * 6));
+    var g = t > 0.35 ? Math.sin(Math.min(1, (t - 0.35) / 0.5) * Math.PI) : 0;   // caught in the headlights
+    wrap.style.filter = 'brightness(' + (0.55 + 0.45 * Math.min(1, t * 2.5) + 0.35 * g) + ')';
+  }
+  function show(i){ face.innerHTML = '<g transform="translate(0 -40)">' + SIGNS[i].face + '</g>'; }
+  var typing = null;
+  function type(text){
+    clearInterval(typing); var n = 0; said.textContent = '';
+    typing = setInterval(function(){ n++; said.textContent = text.slice(0, n); if (n >= text.length) clearInterval(typing); }, 38);
+  }
+
+  if (still){ show(0); place(0.62); drawRoad(0.3); return; }
+  var cur = document.createElement('span'); cur.className = 'cursor'; said.parentNode.insertBefore(cur, said.nextSibling);
+  var i = 0, start = null, last = null, off = 0, DUR = 4600, spoken = false;
+  show(0); said.textContent = ''; drawRoad(0); place(0);
+  function frame(ts){
+    if (start === null){ start = ts; last = ts; }
+    var dt = ts - last; last = ts;
+    if (dt > 100) dt = 16;                      // tab was hidden: do not jump
+    off = (off + dt * 0.00042) % 1; drawRoad(off);
+    var t = (ts - start) / DUR;
+    if (t >= 1){ i = (i + 1) % SIGNS.length; show(i); start = ts; t = 0; spoken = false; }
+    place(t);
+    if (!spoken && t > 0.6){ type(SIGNS[i].said); spoken = true; }
+    requestAnimationFrame(frame);
+  }
+  window.addEventListener('load', function(){
+    document.documentElement.classList.add('loaded');
+    setTimeout(function(){ requestAnimationFrame(frame); }, 900);
+  });
+  setTimeout(function(){ document.documentElement.classList.add('loaded'); }, 1500);   // fonts slow: start anyway
+})();
+
+
+/* --- scroll: progress line, section highlight, steps lane, reveals, count-ups, vote --- */
+(function(){
+  var root = document.documentElement, still = root.classList.contains('still');
+  if (still) root.classList.add('loaded');
+  var bar = document.querySelector('.progress'), steps = document.querySelector('.steps');
+  var stepItems = steps ? steps.querySelectorAll('li') : [];
+  var links = document.querySelectorAll('.nav a'), ids = Array.prototype.map.call(links, function(a){ return a.getAttribute('href').slice(1); });
+  var ticking = false;
+  function onScroll(){
+    ticking = false;
+    var max = root.scrollHeight - innerHeight;
+    bar.style.setProperty('--p', max > 0 ? Math.min(1, scrollY / max) : 0);
+    if (steps){
+      var r = steps.getBoundingClientRect(), mid = innerHeight * 0.62;
+      steps.style.setProperty('--sp', Math.max(0, Math.min(1, (mid - r.top) / r.height)));
+      stepItems.forEach(function(li){ li.classList.toggle('on', li.getBoundingClientRect().top + 23 < mid); });
+    }
+    var now = null;
+    ids.forEach(function(id){ var el = document.getElementById(id); if (el && el.getBoundingClientRect().top < 140) now = id; });
+    links.forEach(function(a){ a.classList.toggle('on', a.getAttribute('href') === '#' + now); });
+  }
+  addEventListener('scroll', function(){ if (!ticking){ ticking = true; requestAnimationFrame(onScroll); } }, {passive:true});
+  addEventListener('resize', onScroll); onScroll();
+
+  function countUp(el){
+    var to = +el.dataset.to, pre = el.dataset.pre || '', suf = el.dataset.suf || '', t0 = null;
+    if (still || !to){ return; }
+    function f(ts){ if (!t0) t0 = ts; var k = Math.min(1, (ts - t0) / 1300), v = Math.round(to * (1 - Math.pow(1 - k, 3)));
+      el.innerHTML = pre + v + suf; if (k < 1) requestAnimationFrame(f); }
+    el.innerHTML = pre + 0 + suf; requestAnimationFrame(f);
+  }
+
+  /* 3 of 5: four pictures arrive; one is blurred; on the third agreement the unit speaks */
+  var vote = document.getElementById('vote'), frames = vote.querySelectorAll('.frame'), tally = document.getElementById('tally'), result = document.getElementById('result');
+  var SEQ = ['seen', 'miss', 'seen', 'seen'], voteTimer = null, voteOn = false;
+  function voteReset(){ frames.forEach(function(f){ f.className = 'frame'; f.querySelector('.fr-res').textContent = ''; }); result.classList.remove('ok'); tally.textContent = 'Pictures agreeing: 0 of 5'; }
+  function voteRun(){
+    voteReset(); var k = 0, agree = 0;
+    function step(){
+      if (!voteOn) return;
+      if (k < SEQ.length){
+        frames[k].classList.add(SEQ[k]);
+        frames[k].querySelector('.fr-res').textContent = SEQ[k] === 'seen' ? '50' : 'unclear';
+        if (SEQ[k] === 'seen') agree++;
+        tally.textContent = 'Pictures agreeing: ' + agree + ' of 5';
+        if (agree === 3){ result.classList.add('ok'); k = SEQ.length; voteTimer = setTimeout(voteRun, 2800); return; }
+        k++; voteTimer = setTimeout(step, 700);
+      }
+    }
+    voteTimer = setTimeout(step, 500);
+  }
+  if (still){ SEQ.forEach(function(c, k){ frames[k].classList.add(c); frames[k].querySelector('.fr-res').textContent = c === 'seen' ? '50' : 'unclear'; });
+    tally.textContent = 'Pictures agreeing: 3 of 5'; result.classList.add('ok'); }
+
+  if (!('IntersectionObserver' in window)){ document.querySelectorAll('.does,.gantry,.road-ahead,.figs').forEach(function(e){ e.classList.add('in'); }); return; }
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if (!e.isIntersecting) return;
+      e.target.classList.add('in'); io.unobserve(e.target);
+      if (e.target.classList.contains('figs')) e.target.querySelectorAll('[data-to]').forEach(countUp);
+      if (e.target.classList.contains('gantry')) setTimeout(function(){ e.target.querySelectorAll('.dsign').forEach(function(d){ d.style.setProperty('--i', 0); }); }, 1600);
+    });
+  }, {threshold: 0.25});
+  document.querySelectorAll('.does,.gantry,.road-ahead,.figs').forEach(function(e){ io.observe(e); });
+  if (!still){
+    new IntersectionObserver(function(es){
+      es.forEach(function(e){ voteOn = e.isIntersecting; clearTimeout(voteTimer); if (voteOn) voteRun(); });
+    }, {threshold: 0.4}).observe(vote);
+  }
+})();
+
+/* --- "hear it" buttons, using the browser's own speech --- */
+(function(){
+  var ok = 'speechSynthesis' in window;
+  document.querySelectorAll('#lines .play').forEach(function(b){
+    if (!ok){ b.hidden = true; return; }
+    b.addEventListener('click', function(){
+      var text = b.parentElement.querySelector('.said').firstChild.textContent.replace(/[“”]/g,'');
+      speechSynthesis.cancel();
+      document.querySelectorAll('#lines .play').forEach(function(o){ o.setAttribute('aria-pressed','false'); });
+      var u = new SpeechSynthesisUtterance(text); u.lang = 'en-GB'; u.rate = 0.95;
+      var v = speechSynthesis.getVoices().filter(function(x){ return /en-GB/i.test(x.lang); });
+      if (v.length) u.voice = v.find(function(x){ return /female|Libby|Sonia|Serena|Kate|Google UK English Female/i.test(x.name); }) || v[0];
+      b.setAttribute('aria-pressed','true'); document.querySelectorAll('#lines li').forEach(function(l){ l.classList.remove('speaking'); }); b.parentElement.classList.add('speaking');
+      u.onend = u.onerror = function(){ b.setAttribute('aria-pressed','false'); b.parentElement.classList.remove('speaking'); };
+      speechSynthesis.speak(u);
+    });
+  });
+})();
+</script>
+</body>
+</html>
