@@ -135,3 +135,50 @@ def test_hung_module_and_deliberate_stop():
     clock.t += 25                                        # dc_phone sends no heartbeat
     m.check()
     assert said == ["Warning: the phone link is not responding."]
+
+
+# --- TRIP push button (press to start, press again to end) -------------------
+
+def test_trip_button_toggles_on_each_press():
+    from dc_ignition.ignition import TripButton, REPEAT_GUARD_S
+    now = [100.0]
+    seen = []
+    b = TripButton(27, seen.append, clock=lambda: now[0])
+
+    def hold(seconds, pressed=True, step=0.02):
+        t = 0.0
+        while t < seconds:
+            b.step(pressed); now[0] += step; t += step
+
+    hold(0.3)                    # first press
+    hold(0.2, pressed=False)
+    assert seen == [True] and b.state is True
+    hold(REPEAT_GUARD_S, pressed=False)
+    hold(0.3)                    # second press
+    hold(0.2, pressed=False)
+    assert seen == [True, False] and b.state is False
+
+
+def test_trip_button_ignores_bounce_and_double_tap():
+    from dc_ignition.ignition import TripButton
+    now = [0.0]
+    seen = []
+    b = TripButton(27, seen.append, clock=lambda: now[0])
+    b.step(True); now[0] += 0.03; b.step(False)          # 30 ms blip: contact bounce
+    assert seen == []
+    for _ in range(10):                                   # a real press
+        b.step(True); now[0] += 0.02
+    b.step(False); now[0] += 0.3
+    for _ in range(10):                                   # pressed again 0.5 s later: ignored
+        b.step(True); now[0] += 0.02
+    assert seen == [True]
+
+
+def test_trip_button_held_down_counts_once():
+    from dc_ignition.ignition import TripButton
+    now = [0.0]
+    seen = []
+    b = TripButton(27, seen.append, clock=lambda: now[0])
+    for _ in range(300):                                  # held for 6 s
+        b.step(True); now[0] += 0.02
+    assert seen == [True]

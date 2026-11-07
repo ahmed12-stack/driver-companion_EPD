@@ -138,27 +138,6 @@
 \newtcolorbox{tip}{enhanced,colback=green!5,colframe=green!45!black,boxrule=0.8pt,arc=2pt,left=4pt,right=4pt,top=2pt,bottom=2pt,
   title={\mandsym[0.38cm]\ \ TIP},fonttitle=\bfseries\sffamily,coltitle=white,colbacktitle=green!45!black}
 
-% The front-view line drawing with callouts (used in Chapter 2).
-\newcommand{\frontdrawing}{%
-\begin{tikzpicture}[x=1.45cm,y=1.45cm,font=\footnotesize\sffamily]
- \draw[fill=black!8,draw=black!70,line width=0.9pt,rounded corners=8pt] (0,0) rectangle (5.2,3.0);
- \draw[fill=black!12,draw=black!70,line width=0.9pt,rounded corners=10pt] (5.4,0.2) rectangle (7.1,2.8);
- \foreach \y in {0.6,0.9,...,2.4}{\draw[black!45,line width=1.1pt,line cap=round] (5.7,\y)--(6.8,\y);}
- \draw[fill=black!75,draw=black!80] (1.5,1.5) circle (0.48);\draw[fill=black!40,draw=none] (1.5,1.5) circle (0.2);\fill[white,opacity=0.6] (1.36,1.64) circle (0.06);
- \foreach \x in {3.0,3.25,...,4.6}{\draw[black!45,line width=1.2pt,line cap=round] (\x,0.5)--(\x,1.2);}
- \draw[fill=white,draw=black!70,line width=0.8pt] (3.0,3.0) rectangle (3.5,3.2);\node[font=\scriptsize\sffamily] at (3.25,3.42) {PAIR};
- \draw[fill=black!20,draw=black!70,line width=0.8pt] (3.95,3.0) rectangle (4.65,3.18);\draw[fill=Amber,draw=black!70] (4.3,3.09) rectangle (4.6,3.27);\node[font=\scriptsize\sffamily] at (4.3,3.47) {TRIP};
- \node[font=\tiny\sffamily] at (4.62,3.22) {I};\node[font=\tiny\sffamily] at (3.98,3.22) {O};
- \draw[fill=black!30,draw=black!70] (-0.2,1.0) rectangle (0,1.4);
- \node[text=black!55] at (2.6,0.25) {\Brand\ \ModelNo};
- \node[circle,draw=NavyBlue,fill=white,inner sep=1pt,text=NavyBlue,font=\bfseries\scriptsize] (a) at (1.5,3.9) {1};\draw[NavyBlue] (a)--(1.5,1.98);
- \node[circle,draw=NavyBlue,fill=white,inner sep=1pt,text=NavyBlue,font=\bfseries\scriptsize] (b) at (6.25,3.9) {2};\draw[NavyBlue] (b)--(6.25,2.8);
- \node[circle,draw=NavyBlue,fill=white,inner sep=1pt,text=NavyBlue,font=\bfseries\scriptsize] (c) at (3.25,3.9) {3};\draw[NavyBlue] (c)--(3.25,3.6);
- \node[circle,draw=NavyBlue,fill=white,inner sep=1pt,text=NavyBlue,font=\bfseries\scriptsize] (d) at (4.3,3.9) {4};\draw[NavyBlue] (d)--(4.3,3.62);
- \node[circle,draw=NavyBlue,fill=white,inner sep=1pt,text=NavyBlue,font=\bfseries\scriptsize] (e) at (-0.7,1.2) {5};\draw[NavyBlue] (e)--(-0.2,1.2);
- \node[circle,draw=NavyBlue,fill=white,inner sep=1pt,text=NavyBlue,font=\bfseries\scriptsize] (f) at (3.8,-0.6) {6};\draw[NavyBlue] (f)--(3.8,0.45);
-\end{tikzpicture}}
-
 \begin{document}
 \pagenumbering{roman}
 
@@ -288,7 +267,7 @@ Do not rely on the product to drive safely. It can miss a sign, read a sign wron
 \begin{itemize}[leftmargin=*]
 \item Place the unit so that it does not block your view of the road, the mirrors or the instruments (Section~\ref{sec:place}).
 \item Never place the unit on or in front of an airbag cover. An airbag can throw it at high speed.
-\item Make sure the unit and its cable cannot slide, fall or get caught in the pedals or the steering wheel during braking or turning.
+\item Make sure the unit, its power cable and the button leads cannot slide, fall or get caught in the pedals or the steering wheel during braking or turning.
 \item Keep the volume loud enough to hear alerts, but not so loud that you cannot hear horns or emergency sirens.
 \item If an alert is unclear, keep driving safely and look at the actual sign. Do not stop suddenly to check the unit.
 \end{itemize}
@@ -308,7 +287,7 @@ The product runs on low voltage (5\,V DC) only. Never connect it directly to the
 \end{caution}
 \begin{itemize}[leftmargin=*]
 \item Use a USB power source rated 5\,V DC and at least 2.4\,A (power bank) or 2.5\,A (car charger).
-\item Do not use a damaged cable; replace it with a good-quality USB-A to micro-USB cable.
+\item Do not use the unit if its power cable is damaged; have the cable replaced by a technician.
 \item Route the cable so it is not pinched by doors, seats or the glovebox.
 \end{itemize}
 
@@ -319,7 +298,7 @@ The power bank (not supplied) contains a lithium battery. It can overheat, burst
 
 \section{Heat, Environment and Handling}\index{heat!hot surface}\index{parked car in the sun}\index{static electricity}\index{water and moisture}
 \begin{caution}
-\hotsym\ The case and the air vents \callout{6} become warm during use. Do not cover the unit, and keep the air vents clear.
+\hotsym\ The case becomes warm during use. Do not cover the unit or wrap it in cloth, and do not put objects on the speaker \callout{2}.
 \end{caution}
 \begin{notice}
 A parked car in the sun can reach 70\,\textdegree C or more. Do not leave the unit or the power bank in a parked car in direct sunlight. Keep the product away from water, dust and strong magnetic fields. Static electricity can damage the electronics; do not touch the port \callout{5} with bare metal.
@@ -361,17 +340,20 @@ The unit works without the internet. It does \emph{not} record video or store ca
 \begin{tabularx}{\linewidth}{|c|X|c|c|}\hline
 \hdr{No.} & \hdr{Item} & \hdr{Qty} & \hdr{Check}\\ \hline
 1 & \ProductName\ \ModelNo\ unit (camera and speaker built in) & 1 & $\square$\\ \hline
-2 & USB-A to micro-USB power cable & 1 & $\square$\\ \hline
+2 & USB power cable with USB-A plug (fitted to the unit) & 1 & $\square$\\ \hline
 3 & Quick Start Guide & 1 & $\square$\\ \hline
 4 & Full User Manual (this document) & 1 & $\square$\\ \hline
 \end{tabularx}\end{table}
 \textbf{You also need} (not supplied): an Android phone with Android 8.0 or newer, and a USB power bank of 5\,V, 2.4\,A or more (or a car USB charger, see Section~\ref{sec:power}). If any item is missing or damaged, contact support (Chapter~\ref{ch:compliance}) before using the product.
 
-\section{Parts and Controls}\label{sec:parts}\index{parts and controls}\index{camera window}\index{speaker}\index{PAIR button}\index{TRIP switch}\index{power input}\index{air vents}\index{micro-USB|see{power input}}
+\section{Parts and Controls}\label{sec:parts}\index{parts and controls}\index{camera window}\index{speaker}\index{PAIR button}\index{TRIP button}\index{power cable}\index{button leads}\index{micro-USB|see{power cable}}\index{enclosure}
 
 \begin{figure}[H]\centering
-\frontdrawing
-\caption{Front view: parts and controls}\label{fig:parts}
+\begin{tabular}{@{}c@{\hspace{4mm}}c@{}}
+\photo{parts_front.jpg}{0.49\linewidth}{6cm}{Front} & \photo{parts_back.jpg}{0.47\linewidth}{6cm}{Back}\\[2pt]
+\small (a) Front: camera window and speaker & \small (b) Back: buttons and power cable\\
+\end{tabular}
+\caption{Parts and controls}\label{fig:parts}
 \end{figure}
 
 \begin{table}[H]\centering\small
@@ -381,15 +363,14 @@ The unit works without the internet. It does \emph{not} record video or store ca
 \callout{1} & Camera window & Looks at the road ahead to read signs. Keep it clean and pointed forward\\ \hline
 \callout{2} & Speaker & Speaks all alerts, announcements and summaries\\ \hline
 \callout{3} & \ui{PAIR} button & Hold 5\,s to let a new phone pair (Section~\ref{sec:pair})\\ \hline
-\callout{4} & \ui{TRIP} switch & \ui{I} (on) when you set off, \ui{O} (off) when you park. Starts and ends a trip\\ \hline
-\callout{5} & Power input & Micro-USB socket, 5\,V DC. The unit switches on when power is connected\\ \hline
-\callout{6} & Air vents & Let heat out. Never cover them\\ \hline
+\callout{4} & \ui{TRIP} button & Press once before you set off (\say{Trip started.}), press again when you have parked (\say{Trip ended.})\\ \hline
+\callout{5} & Power cable & USB cable with a USB-A plug, 5\,V DC. The unit switches on when the plug is connected to a power source\\ \hline
 \end{tabularx}\end{table}
+The \ui{PAIR} and \ui{TRIP} buttons hang on short leads at the back of the unit, so you can place them within reach of the driver's seat (Figure~\ref{fig:photos}). Both spring back when released. On this prototype the buttons carry the stickers \emph{WORK} (\ui{PAIR}) and \emph{TO DO} (\ui{TRIP}).
 
 \begin{figure}[H]\centering
-\photo{um_front.jpg}{0.47\linewidth}{5cm}{Unit, front}\hfill
-\photo{um_top.jpg}{0.47\linewidth}{5cm}{Unit, top: PAIR and TRIP}
-\caption{The \ModelNo\ unit (photographs)}\label{fig:photos}
+\photo{buttons_labeled.jpg}{0.72\linewidth}{6.5cm}{PAIR and TRIP buttons}
+\caption{The \ui{PAIR} and \ui{TRIP} buttons and the power cable, at the back of the unit}\label{fig:photos}
 \end{figure}
 
 \section{The \AppName\ App}\label{sec:appoverview}\index{app!screens}\index{home screen}\index{trip details screen}\index{Announcements screen}
@@ -418,7 +399,7 @@ The following diagram shows how the parts of the product work together. It is pr
  \node[anchor=north,font=\small\sffamily\bfseries] at (pi.north) {Controller (Raspberry Pi 3B+)};
  \node[font=\scriptsize\sffamily,align=left,anchor=north west] at ($(pi.north west)+(0.2,-0.55)$) {\textbullet\ Sign reader (camera, AI model)\\ \textbullet\ Speed check\\ \textbullet\ Trip logger and AI remark\\ \textbullet\ Speech (one message at a time)\\ \textbullet\ Phone link\\ \textbullet\ Health monitor};
  \node[box,left=0.8cm of pi,yshift=1cm] (cam) {Camera};
- \node[box,left=0.8cm of pi,yshift=-1cm] (ctl) {PAIR button,\\TRIP switch};
+ \node[box,left=0.8cm of pi,yshift=-1cm] (ctl) {PAIR and\\TRIP buttons};
  \node[box,right=0.8cm of pi,yshift=1cm] (amp) {Amplifier};
  \node[box,right=0.8cm of pi,yshift=-1cm] (ble) {Bluetooth LE};
  \node[box,right=0.5cm of amp,minimum width=1.8cm] (spk) {Speaker};
@@ -440,7 +421,7 @@ The following diagram shows how the parts of the product work together. It is pr
 \hdr{Parameter} & \hdr{Value}\\ \hline
 Model & \ModelNo\\ \hline
 Controller & Raspberry Pi 3B+ (quad-core 1.4\,GHz, 1\,GB RAM)\\ \hline
-Power input & 5\,V DC, micro-USB; source of at least 2.4\,A\\ \hline
+Power input & 5\,V DC through the unit's USB cable (USB-A plug); source of at least 2.4\,A\\ \hline
 Power consumption & About 2--5\,W, depending on load (controller figures)\\ \hline
 Running time on a power bank & About 6--8\,h on a 10\,000\,mAh power bank (estimate)\\ \hline
 Ready after power-on & About 60\,s, confirmed by \say{Self test passed. System ready.}\\ \hline
@@ -457,7 +438,8 @@ Trip storage & Unit: last 20 trips. App: last 200 trips. Route point about every
 Operating conditions & 0--45\,\textdegree C; inside the vehicle; non-condensing\\ \hline
 Storage conditions & $-$10 to +60\,\textdegree C; dry\\ \hline
 Ingress protection & IP20 (IEC 60529); not protected against water\\ \hline
-Dimensions / mass & Main case and speaker pod: see Product Design Report (case limit 125\,$\times$\,95\,$\times$\,55\,mm, 250\,g)\\ \hline
+Enclosure & General-purpose electrical junction box (PVC), cut to fit; speaker on the lid; PAIR and TRIP buttons on short leads\\ \hline
+Dimensions / mass & Measured values: see the Product Test Report\\ \hline
 Device software & \FWVer\ (app \AppVer)\\ \hline
 \end{tabularx}\end{table}
 
@@ -478,7 +460,7 @@ Surface & Flat part of the dashboard, near the centre of the windscreen, on a no
 View & Camera window \callout{1} facing straight ahead, with a clear view through the windscreen, inside the area cleared by the wipers\\ \hline
 Driver's view & Below your line of sight to the road; not in front of the instruments or mirrors\\ \hline
 Airbags & Not on, or in front of, any airbag cover (marked \emph{SRS} or \emph{AIRBAG})\\ \hline
-Clearance & At least 2\,cm free space around the air vents \callout{6}\\ \hline
+Clearance & Speaker \callout{2} on the lid uncovered; at least 2\,cm free space around the case\\ \hline
 Phone & Within 5\,m of the unit (inside the car), in a holder or a pocket; Bluetooth on\\ \hline
 \end{tabularx}\end{table}
 
@@ -517,6 +499,7 @@ Phone & Within 5\,m of the unit (inside the car), in a holder or a pocket; Bluet
 \item Check from the driver's seat that the unit is below your view of the road and does not reflect in the windscreen.
 \item Check that the camera's view is not blocked by the rear-view mirror, a sticker or a tinted band.
 \item Push gently on the unit: it must not slide. If it does, use a stronger non-slip mat.
+\item Lay the \ui{PAIR} and \ui{TRIP} buttons where you can reach them while parked, clear of the pedals, the gear lever and the steering wheel.
 \end{enumerate}
 \begin{tip}
 The camera reads signs best when it is level and looks slightly to the left of the lane, where Indian road signs stand. A clean windscreen makes a large difference at night and in the rain.
@@ -533,14 +516,13 @@ The camera reads signs best when it is level and looks slightly to the left of t
  \foreach \x in {5.5,5.8,6.1,6.4}{\fill[green!70!black] (\x,-0.92) rectangle (\x+0.2,-0.68);}
  \node[white,font=\tiny\sffamily] at (6.9,-0.8) {5\,V};
  \node at (6.4,-1.6) {Power bank (5\,V, $\ge$2.4\,A)};
- \node[align=left,anchor=west] at (3.6,0.9) {USB-A to\\micro-USB cable};
+ \node[align=left,anchor=west] at (3.6,0.9) {Unit's USB\\power cable};
 \end{tikzpicture}
 \caption{Connecting the power bank}\label{fig:power}
 \end{figure}
 \subsection*{Standard: power bank}
 \begin{enumerate}[leftmargin=*]
-\item Plug the micro-USB end of the cable into the power input \callout{5}.
-\item Plug the USB-A end into the power bank. The unit switches on.
+\item Plug the unit's USB power cable \callout{5} into the power bank. The unit switches on.
 \item Wait about 60\,s. The unit speaks \spk\ \say{Self test passed. System ready.}
 \item Put the power bank where it cannot slide (for example in the door pocket or the centre console), out of direct sunlight.
 \end{enumerate}
@@ -602,8 +584,8 @@ After the first pairing, the app connects again by itself whenever the unit is o
 \caption{Power control}
 \begin{tabularx}{\linewidth}{|l|X|}\hline
 \hdr{Action} & \hdr{How}\\ \hline
-Switch on & Connect power to \callout{5}. Ready in about 60\,s: \say{Self test passed. System ready.}\\ \hline
-Switch off & Set \ui{TRIP} \callout{4} to \ui{O}, wait until the trip summary has been spoken and the trip appears in the app, then disconnect the power\\ \hline
+Switch on & Plug the power cable \callout{5} into the power source. Ready in about 60\,s: \say{Self test passed. System ready.}\\ \hline
+Switch off & Press \ui{TRIP} \callout{4} to end the trip, wait until the trip summary has been spoken and the trip appears in the app, then unplug the power cable\\ \hline
 Restart & Disconnect the power, wait 10\,s, connect it again (use only if the unit does not respond)\\ \hline
 \end{tabularx}\end{table}
 \begin{notice}
@@ -620,6 +602,7 @@ The unit has no screen and no lights: it tells you its state by voice. The app's
 \spk\ \say{Self test: \ldots} & Started, but something is wrong (it names the part). See Table~\ref{tab:errors}\\ \hline
 \spk\ \say{Pairing mode on.} / \say{Pairing mode off.} & A new phone can pair for 2 minutes / pairing closed\\ \hline
 \spk\ \say{Phone paired.} & A phone has paired successfully\\ \hline
+\spk\ \say{Trip started.} / \say{Trip ended.} & You pressed \ui{TRIP}; a trip has started / ended\\ \hline
 \spk\ \say{Sign alerts paused.} & The camera has been blocked, dark or dazzled for 10\,s. Overspeed warnings continue\\ \hline
 \spk\ \say{Sign alerts resumed.} & The camera can see again\\ \hline
 \spk\ \say{Camera not found. Sign alerts are off.} & The camera is not working. See Table~\ref{tab:errors}\\ \hline
@@ -639,9 +622,9 @@ The unit has no screen and no lights: it tells you its state by voice. The app's
 \begin{enumerate}[leftmargin=*]
 \item Connect the power and wait for \say{System ready.} The app connects by itself.
 \item Check that the app shows \ui{Connected} and a green \ui{Phone GPS} line. Put the phone away.
-\item Set the \ui{TRIP} switch \callout{4} to \ui{I} as you set off. The trip starts after 1\,s.
+\item Press the \ui{TRIP} button \callout{4} once, before you set off. The unit says \spk\ \say{Trip started.}
 \item Drive. The unit speaks road signs, overspeed warnings and your chosen announcements.
-\item When you have parked, set the \ui{TRIP} switch to \ui{O}. After 5\,s the unit speaks the trip summary.
+\item When you have parked, press \ui{TRIP} again. The unit says \spk\ \say{Trip ended.} and then speaks the trip summary.
 \item Look at the trip in the app later (Section~\ref{sec:trips}).
 \end{enumerate}
 \begin{figure}[H]\centering
@@ -651,8 +634,8 @@ The unit has no screen and no lights: it tells you its state by voice. The app's
  ar/.style={-{Stealth},line width=0.7pt}]
  \node[st] (s1) {Power on};
  \node[dc,right=of s1] (d) {Self test\\passed?};
- \node[st,right=of d] (s2) {TRIP \ui{I}:\\drive, alerts};
- \node[st,right=of s2] (s3) {TRIP \ui{O}:\\summary};
+ \node[st,right=of d] (s2) {Press TRIP:\\drive, alerts};
+ \node[st,right=of s2] (s3) {Press TRIP\\again: summary};
  \node[st,below=0.8cm of d] (e) {Names the\\problem};
  \node[st,below=0.8cm of s3] (s4) {Trip in\\the app};
  \draw[ar] (s1)--(d);\draw[ar] (d)--node[above]{yes}(s2);\draw[ar] (s2)--(s3);\draw[ar] (s3)--(s4);\draw[ar] (d)--node[right]{no}(e);
@@ -660,7 +643,7 @@ The unit has no screen and no lights: it tells you its state by voice. The app's
 \caption{Start-up and drive sequence}
 \end{figure}
 \begin{tip}
-Trips shorter than 100\,m are not kept (for example when you only move the car in the driveway). Waiting in traffic does not end a trip: only the \ui{TRIP} switch does.
+Trips shorter than 100\,m are not kept (for example when you only move the car in the driveway). Waiting in traffic does not end a trip: only the \ui{TRIP} button does.
 \end{tip}
 
 \section{Road-Sign Alerts}\label{sec:signs}\index{road signs}\index{sign list}\index{speed limit signs}\index{road signs!limitations}
@@ -706,7 +689,7 @@ Incoming call & \say{Incoming call from Priya.}\\ \hline
 The unit speaks one thing at a time, most urgent first: overspeed warnings, then road signs, then calls, then messages, then system messages. An announcement that has waited too long is dropped, so you never hear an old call. \ui{Quiet mode} stops all phone announcements; road alerts continue.
 
 \section{Trip Summary and Trip History}\label{sec:trips}\index{trip summary}\index{AI remark}\index{trip history}\index{map!route}\index{route|see{map}}
-When you set the \ui{TRIP} switch to \ui{O}, the unit speaks:
+When you press \ui{TRIP} to end the trip, the unit says \say{Trip ended.} and then speaks:
 \begin{enumerate}[leftmargin=*]
 \item a sentence with the facts of the drive (distance, time, warnings), at once; then
 \item one short remark written by the on-device AI, after about 5--8\,s. The very first remark after the unit is switched on can take up to a minute.
@@ -751,7 +734,7 @@ Disconnect the power before cleaning or any maintenance work.
 \hdr{Interval} & \hdr{Task} & \hdr{Section} & \hdr{Who}\\ \hline
 Before each drive & Check the cable, the case and the camera window; listen for \say{System ready.} & --- & User\\ \hline
 Weekly & Clean the camera window and the windscreen in front of it & \ref{sec:cleaning} & User\\ \hline
-Monthly & Clean the case and the air vents; check that the unit does not slide & \ref{sec:cleaning} & User\\ \hline
+Monthly & Clean the case and the speaker; check that the unit does not slide & \ref{sec:cleaning} & User\\ \hline
 When announced & Install the new app version or device software & \ref{sec:fw} & User / Tech.\\ \hline
 \end{tabularx}\end{table}
 
@@ -759,14 +742,14 @@ When announced & Install the new app version or device software & \ref{sec:fw} &
 \begin{enumerate}[leftmargin=*]
 \item Wipe the camera window \callout{1} with a dry microfibre cloth, such as a spectacle cloth.
 \item Wipe the case with a soft, slightly damp, lint-free cloth. Dry it at once.
-\item Clean the air vents \callout{6} and the speaker grille \callout{2} with a soft, dry brush.
+\item Dust the speaker \callout{2} gently with a soft, dry brush. Do not press on the speaker cone.
 \end{enumerate}
 \begin{notice}
-Do not use solvents, glass cleaner, abrasive cleaners or sprays on the unit, and do not let liquid enter the vents or the port.
+Do not use solvents, glass cleaner, abrasive cleaners or sprays on the unit, and do not let liquid enter the case through the camera window or the cable openings.
 \end{notice}
 
 \section{Heat}\index{heat!slower alerts}\index{throttling|see{heat}}
-On hot days the unit slows its camera to protect itself, and sign alerts may come slightly later. Keep the vents clear and out of direct sun where possible, and do not leave the unit in a parked car in the sun.
+On hot days the unit slows its camera to protect itself, and sign alerts may come slightly later. Keep the unit uncovered and out of direct sun where possible, and do not leave the unit in a parked car in the sun.
 
 \section{Software Updates}\label{sec:fw}\index{software update}\index{app!updating}\index{device software!updating}
 \subsection*{App}
@@ -789,13 +772,18 @@ Store the unit in its packaging at $-$10 to +60\,\textdegree C, in a dry place. 
 \caption{Replaceable parts}
 \begin{tabularx}{\linewidth}{|l|X|l|}\hline
 \hdr{Part} & \hdr{Description / specification} & \hdr{Who replaces it}\\ \hline
-Power cable & USB-A to micro-USB, rated 2.4\,A or more & User\\ \hline
+Power cable & USB-A to micro-USB, rated 2.4\,A or more; routed into the case & Technician\\ \hline
+PAIR and TRIP buttons & Momentary push buttons on leads with 2.54\,mm sockets & Technician\\ \hline
 Camera module & Raspberry Pi camera, 5\,MP, ribbon cable & Technician\\ \hline
 Speaker & 3\,W, 4\,$\Omega$, 3-inch & Technician\\ \hline
 Amplifier & MAX98357A I2S class-D amplifier board & Technician\\ \hline
 microSD card & Card with the device software & Technician\\ \hline
 \end{tabularx}\end{table}
-Every module plugs in; no soldering is needed to replace it. Service must be carried out only by the \Brand\ team or a trained technician. Contact: \field{\SupportMail}{e-mail}.
+\begin{figure}[H]\centering
+\photo{inside_labeled.jpg}{0.86\linewidth}{9cm}{Inside the unit}
+\caption{Inside the unit, lid removed (Technician only)}\label{fig:inside}
+\end{figure}
+Every module plugs in; no soldering is needed to replace it (Figure~\ref{fig:inside}). Service must be carried out only by the \Brand\ team or a trained technician. Contact: \field{\SupportMail}{e-mail}.
 
 % =====================================================================
 \chapter{Troubleshooting}\label{ch:trouble}
@@ -826,9 +814,9 @@ The app does not find the unit & Pairing mode not on; Bluetooth off; old pairing
 Pairing box does not appear, or \ui{Pairing failed} & Pairing mode closed after 2 minutes; wrong code & Hold \ui{PAIR} again and type the code at once\\ \hline
 Connected, but messages are not announced & Notification access off; app not chosen; Quiet mode on & Allow Notification access; switch the app on under \ui{Apps to announce}; switch Quiet mode off\\ \hline
 Connection drops when the phone sleeps & Battery saver stops the app & Set the app's battery use to \ui{Unrestricted}\\ \hline
-No road-sign alerts & \ui{TRIP} switch at \ui{O}; camera blocked; \say{Sign alerts paused.} & Set \ui{TRIP} to \ui{I}; clean the camera window and the windscreen; point the unit forward\\ \hline
+No road-sign alerts & No trip running; camera blocked; \say{Sign alerts paused.} & Press \ui{TRIP} (it says \say{Trip started.}); clean the camera window and the windscreen; point the unit forward\\ \hline
 No overspeed warnings & No speed-limit sign read; weak phone GPS & Normal behaviour without a sign; check the \ui{Phone GPS} line is green\\ \hline
-Alerts come late or the unit restarts & Weak power source; unit too hot & Use a power bank of 2.4\,A or more; clear the vents; keep out of the sun\\ \hline
+Alerts come late or the unit restarts & Weak power source; unit too hot & Use a power bank of 2.4\,A or more; keep the unit uncovered and out of the sun\\ \hline
 No trip summary when parking & Power lost with the key (car charger) & Use a power bank (Section~\ref{sec:power})\\ \hline
 Map is blank but the route shows & No mobile data on the phone & The map needs data; the route is stored anyway\\ \hline
 The voice is too quiet or too loud & Volume setting & Change \ui{Volume} in the app\\ \hline
@@ -888,7 +876,8 @@ RoHS Directive 2011/65/EU & Restriction of hazardous substances in the product\\
 \caption{Main materials (to help recyclers)}
 \begin{tabularx}{\linewidth}{|l|X|l|}\hline
 \hdr{Component} & \hdr{Material} & \hdr{Recycling route}\\ \hline
-Case and speaker pod & ABS plastic, 3D-printed & Plastics\\ \hline
+Case & General-purpose electrical junction box, PVC plastic & Plastics\\ \hline
+Buttons & Plastic push buttons, copper leads & E-waste\\ \hline
 Circuit boards (controller, amplifier, camera) & FR-4 laminate, copper, solder & E-waste\\ \hline
 Speaker & Steel, magnet, paper cone & E-waste\\ \hline
 Cable & Copper, PVC & E-waste\\ \hline
@@ -937,9 +926,9 @@ Not applicable: no declaration of conformity has been issued for this prototype.
 \begin{tabularx}{\linewidth}{|l|X|}\hline
 \hdr{Task} & \hdr{Action}\\ \hline
 Switch on & Connect the power; wait for \say{System ready.}\\ \hline
-Start a trip & \ui{TRIP} \callout{4} to \ui{I}\\ \hline
-End a trip and hear the summary & \ui{TRIP} to \ui{O}\\ \hline
-Switch off & After the summary, disconnect the power\\ \hline
+Start a trip & Press \ui{TRIP} \callout{4} (\say{Trip started.})\\ \hline
+End a trip and hear the summary & Press \ui{TRIP} again (\say{Trip ended.})\\ \hline
+Switch off & After the summary, unplug the power cable\\ \hline
 Pair a new phone & Hold \ui{PAIR} \callout{3} for 5\,s, then \ui{Pair} in the app and type the spoken code\\ \hline
 Test the speaker & App: \ui{Send test alert}\\ \hline
 Road alerts only & App: \ui{Quiet mode} on\\ \hline
@@ -953,7 +942,7 @@ Support & \field{\SupportMail}{e-mail}\\ \hline
 \begin{tabularx}{\linewidth}{|l|l|l|X|}\hline
 \hdr{Part} & \hdr{Pin} & \hdr{Signal} & \hdr{Description}\\ \hline
 \ui{PAIR} button & 11 / 9 & GPIO17 / GND & Pressed = low; held 5\,s = pairing mode\\ \hline
-\ui{TRIP} switch & 13 / 14 & GPIO27 / GND & Closed = trip running (1\,s to start, 5\,s to end)\\ \hline
+\ui{TRIP} button & 13 / 14 & GPIO27 / GND & Pressed = low; each press starts or ends a trip\\ \hline
 Amplifier & 2 / 6 & 5\,V / GND & Supply\\ \hline
  & 12 / 35 / 40 & BCLK / LRC / DIN & Digital audio (I2S)\\ \hline
  & 39 & GAIN to GND & Fixed gain (12\,dB)\\ \hline
@@ -971,7 +960,7 @@ Power & micro-USB & 5\,V DC & Controller power input\\ \hline
 \textbf{Overspeed} & Driving more than 5\,km/h above the last speed limit read\\
 \textbf{Pairing} & Making a trusted Bluetooth link between the phone and the unit, once\\
 \textbf{Quiet mode} & An app setting that keeps road alerts and stops phone announcements\\
-\textbf{Trip} & One drive, from \ui{TRIP} \ui{I} to \ui{TRIP} \ui{O}\\
+\textbf{Trip} & One drive, from one press of \ui{TRIP} to the next\\
 \textbf{WEEE} & Waste electrical and electronic equipment\\
 \textbf{IP code} & Ingress protection rating (IEC 60529)\\
 \end{tabular}

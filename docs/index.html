@@ -163,7 +163,7 @@ section{padding:104px 0}
 .privacy li{margin:8px 0}
 
 /* ---------- roadmap ---------- */
-.road-ahead{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-top:48px;border-top:4px dashed var(--ink)}
+.road-ahead{display:grid;grid-template-columns:repeat(3,1fr);row-gap:28px;gap:28px 0;margin-top:48px;border-top:4px dashed var(--ink)}
 .road-ahead div{padding:22px 18px 0 0}
 .road-ahead b{display:block;font-size:18px;margin-bottom:6px}
 .road-ahead p{font-size:16px;color:var(--ink-2)}
@@ -276,8 +276,8 @@ html.moving .gantry.in .dsign:hover{transform:translateY(-3px)}
 /* road ahead: the car drives to where we are today */
 .road-ahead{position:relative}
 .car{position:absolute;top:-15px;left:-40px;width:40px;height:26px;transition:left 2.2s var(--ease) .2s}
-.road-ahead.in .car{left:calc(10% - 20px)}
-html.still .car{left:calc(10% - 20px)}
+.road-ahead.in .car{left:calc(16.6% - 20px)}
+html.still .car{left:calc(16.6% - 20px)}
 
 /* figures count up */
 .fig b{min-width:2ch}
@@ -290,6 +290,34 @@ html.still .car{left:calc(10% - 20px)}
 @media (prefers-reduced-motion: reduce){
   .eq i,.caption .cursor{animation:none}
 }
+
+/* =================== THE PROTOTYPE: PHOTOS =================== */
+.meet .wrap{display:grid;grid-template-columns:1.3fr 1fr;gap:56px;align-items:center}
+.meet .hero-shot{border-radius:18px;overflow:hidden;border:1px solid var(--tarmac-3);background:#1A1C1F}
+.meet .hero-shot img{width:100%;height:auto}
+.facts{list-style:none;margin:28px 0 0;padding:0;border-top:1px solid var(--tarmac-3)}
+.facts li{display:grid;grid-template-columns:28px 1fr;gap:10px;padding:13px 0;border-bottom:1px solid var(--tarmac-3);font-size:17px}
+.facts li b{color:var(--amber);font-family:var(--mono);font-weight:600}
+.story{font-size:16px;color:var(--fog);margin-top:22px}
+.gallery{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:8px}
+.shot{display:block;padding:0;border:1px solid var(--tarmac-3);border-radius:14px;overflow:hidden;background:var(--tarmac-2);cursor:zoom-in;text-align:left;color:inherit;font:inherit}
+.shot .frame-img{aspect-ratio:4/3;overflow:hidden;background:#E2E3DE}
+.shot img{width:100%;height:100%;object-fit:cover;transition:transform .7s var(--ease)}
+.shot:hover img,.shot:focus-visible img{transform:scale(1.045)}
+.shot span{display:block;padding:12px 16px 10px;font-size:15px;color:var(--fog)}
+.shot span b{display:block;color:var(--paper);font-size:17px;margin-bottom:2px}
+html.moving .meet .hero-shot{opacity:0;transform:scale(.97);transition:opacity 1.1s var(--ease),transform 1.4s var(--ease)}
+html.moving .meet.in .hero-shot{opacity:1;transform:none}
+html.moving .gallery .shot{opacity:0;transform:translateY(18px);transition:opacity .8s var(--ease),transform .8s var(--ease);transition-delay:calc(var(--i,0)*120ms + .2s)}
+html.moving .gallery.in .shot{opacity:1;transform:none}
+dialog.lb{border:0;padding:0;background:transparent;max-width:min(1200px,94vw);color:var(--paper)}
+dialog.lb::backdrop{background:rgba(10,11,12,.86);backdrop-filter:blur(4px)}
+dialog.lb img{max-height:80vh;width:auto;max-width:100%;border-radius:12px;display:block;margin:0 auto}
+dialog.lb p{text-align:center;margin-top:12px;font-size:16px;color:var(--fog)}
+dialog.lb .close{position:absolute;top:-6px;right:-6px;width:44px;height:44px;border-radius:50%;border:1.5px solid var(--tarmac-3);background:var(--tarmac);color:var(--paper);font-size:22px;cursor:pointer}
+html.moving dialog.lb[open]{animation:lbin .45s var(--ease)}
+@keyframes lbin{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+@media (max-width:900px){.meet .wrap{grid-template-columns:1fr;gap:32px}.gallery{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -302,6 +330,7 @@ html.still .car{left:calc(10% - 20px)}
       CARA <small>Driver Companion</small>
     </a>
     <nav class="nav" aria-label="Sections">
+      <a href="#prototype">The unit</a>
       <a href="#what">What it does</a>
       <a href="#how">How it works</a>
       <a href="#setup">Set up</a>
@@ -358,6 +387,30 @@ html.still .car{left:calc(10% - 20px)}
     <span>Built and tested by EPD Group 7 at KIIT, Bhubaneswar, as part of the Electronic Product Development course.</span>
   </div>
 </div>
+
+
+<!-- ===================== THE PROTOTYPE ===================== -->
+<section class="meet" id="prototype" aria-labelledby="h-meet">
+  <div class="wrap">
+    <div class="hero-shot"><img src="img/dc1_hero.jpg" width="1491" height="994" alt="The CARA DC-1 prototype: a white box with a speaker on the lid and a camera window at the front"></div>
+    <div>
+      <h2 id="h-meet">Meet the DC-1</h2>
+      <ul class="facts">
+        <li><b>1</b><span>Camera window at the front, looking at the road</span></li>
+        <li><b>2</b><span>Speaker on the lid, facing up</span></li>
+        <li><b>3</b><span>PAIR and TRIP buttons on short leads at the back</span></li>
+        <li><b>4</b><span>One USB cable to a power bank</span></li>
+      </ul>
+      <p class="story">Our 3D printer broke after its first print, so this prototype lives in a general-purpose electrical box that we cut to fit. The electronics inside are exactly those of the final design.</p>
+    </div>
+    <div class="gallery">
+      <button class="shot" style="--i:0" data-full="img/dc1_front.jpg" data-cap="Front: the camera window (1) and the speaker (2)"><div class="frame-img"><img src="img/dc1_front.jpg" alt="Front of the unit" loading="lazy"></div><span><b>Front</b>Camera window and speaker</span></button>
+      <button class="shot" style="--i:1" data-full="img/dc1_buttons.jpg" data-cap="Back: the PAIR and TRIP buttons and the power cable"><div class="frame-img"><img src="img/dc1_buttons.jpg" alt="PAIR and TRIP buttons at the back of the unit" loading="lazy"></div><span><b>Back</b>PAIR and TRIP buttons, power cable</span></button>
+      <button class="shot" style="--i:2" data-full="img/dc1_inside.jpg" data-cap="Inside: Raspberry Pi 3B+ with heatsinks, camera, audio amplifier"><div class="frame-img"><img src="img/dc1_inside.jpg" alt="Inside the unit with the lid removed" loading="lazy"></div><span><b>Inside</b>Raspberry Pi, camera, amplifier</span></button>
+    </div>
+  </div>
+</section>
+<dialog class="lb" id="lb" aria-label="Photo"><button class="close" aria-label="Close photo">×</button><img alt=""><p></p></dialog>
 
 <!-- ===================== WHAT IT DOES ===================== -->
 <section class="light" id="what" aria-labelledby="h-what">
@@ -456,10 +509,10 @@ html.still .car{left:calc(10% - 20px)}
     <div>
       <h2 id="h-setup">Ready in four steps</h2>
       <ol class="steps">
-        <li><span class="stepn">1</span><div><h3>Connect power</h3><p>Plug the cable into the unit and a power bank. After about a minute it says “Self test passed. System ready.”</p></div></li>
+        <li><span class="stepn">1</span><div><h3>Connect power</h3><p>Plug the unit's USB cable into a power bank. After about a minute it says “Self test passed. System ready.”</p></div></li>
         <li><span class="stepn">2</span><div><h3>Install the app</h3><p>Download the Driver Companion app below and allow the four permissions it asks for.</p></div></li>
         <li><span class="stepn">3</span><div><h3>Pair your phone</h3><p>Hold the PAIR button for 5 seconds, tap Pair in the app and type the code the unit speaks.</p></div></li>
-        <li><span class="stepn">4</span><div><h3>Drive</h3><p>Place the unit on the dashboard facing the road. Switch TRIP on when you set off and off when you park.</p></div></li>
+        <li><span class="stepn">4</span><div><h3>Drive</h3><p>Place the unit on the dashboard facing the road. Press TRIP before you set off (“Trip started.”) and again when you park (“Trip ended.”).</p></div></li>
       </ol>
     </div>
     <div>
@@ -545,8 +598,9 @@ html.still .car{left:calc(10% - 20px)}
       <div><span class="done">Working now</span><b>Signs, speed, messages, trips</b><p>Tested on the real unit with the phone's GPS.</p></div>
       <div><span class="muted">Planned</span><b>Own GPS module</b><p>A built-in receiver, so speed works without the phone.</p></div>
       <div><span class="muted">Planned</span><b>Motion sensor</b><p>Measures harsh braking and acceleration, and spots potholes.</p></div>
-      <div><span class="muted">Planned</span><b>Ignition wire</b><p>Trips start and end with the car key instead of a switch.</p></div>
+      <div><span class="muted">Planned</span><b>Ignition wire</b><p>Trips start and end with the car key instead of the TRIP button.</p></div>
       <div><span class="muted">Planned</span><b>Updates over the air</b><p>New signs and software sent through the app.</p></div>
+      <div><span class="muted">Planned</span><b>Custom case</b><p>A 3D-printed case with built-in buttons, once the lab printer is repaired.</p></div>
     </div>
   </div>
 </section>
@@ -728,7 +782,7 @@ html.still .car{left:calc(10% - 20px)}
   if (still){ SEQ.forEach(function(c, k){ frames[k].classList.add(c); frames[k].querySelector('.fr-res').textContent = c === 'seen' ? '50' : 'unclear'; });
     tally.textContent = 'Pictures agreeing: 3 of 5'; result.classList.add('ok'); }
 
-  if (!('IntersectionObserver' in window)){ document.querySelectorAll('.does,.gantry,.road-ahead,.figs').forEach(function(e){ e.classList.add('in'); }); return; }
+  if (!('IntersectionObserver' in window)){ document.querySelectorAll('.does,.gantry,.road-ahead,.figs,.meet,.gallery').forEach(function(e){ e.classList.add('in'); }); return; }
   var io = new IntersectionObserver(function(es){
     es.forEach(function(e){
       if (!e.isIntersecting) return;
@@ -737,12 +791,24 @@ html.still .car{left:calc(10% - 20px)}
       if (e.target.classList.contains('gantry')) setTimeout(function(){ e.target.querySelectorAll('.dsign').forEach(function(d){ d.style.setProperty('--i', 0); }); }, 1600);
     });
   }, {threshold: 0.25});
-  document.querySelectorAll('.does,.gantry,.road-ahead,.figs').forEach(function(e){ io.observe(e); });
+  document.querySelectorAll('.does,.gantry,.road-ahead,.figs,.meet,.gallery').forEach(function(e){ io.observe(e); });
   if (!still){
     new IntersectionObserver(function(es){
       es.forEach(function(e){ voteOn = e.isIntersecting; clearTimeout(voteTimer); if (voteOn) voteRun(); });
     }, {threshold: 0.4}).observe(vote);
   }
+})();
+
+
+/* --- photo viewer --- */
+(function(){
+  var lb = document.getElementById('lb'); if (!lb || !lb.showModal) return;
+  var img = lb.querySelector('img'), cap = lb.querySelector('p');
+  document.querySelectorAll('.shot').forEach(function(b){
+    b.addEventListener('click', function(){ img.src = b.dataset.full; img.alt = b.dataset.cap; cap.textContent = b.dataset.cap; lb.showModal(); });
+  });
+  lb.querySelector('.close').addEventListener('click', function(){ lb.close(); });
+  lb.addEventListener('click', function(e){ if (e.target === lb) lb.close(); });
 })();
 
 /* --- "hear it" buttons, using the browser's own speech --- */

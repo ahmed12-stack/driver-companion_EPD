@@ -111,63 +111,36 @@
 \begin{qbox}{A \ \ What is in the box}
 \begin{tabularx}{\linewidth}{@{}X X@{}}
 $\square$ \Brand\ \ModelNo\ unit $\times$1 & $\square$ Quick Start Guide\\
-$\square$ USB power cable $\times$1 & $\square$ Full User Manual\\
+$\square$ Power cable (fitted) & $\square$ Full User Manual\\
 \end{tabularx}\par
 {\scriptsize\renewcommand{\baselinestretch}{1}\selectfont Not supplied: power bank (5\,V, 2.4\,A or more) or car USB charger; Android phone (8.0 or newer).\par}
 \end{qbox}
 \vspace{2pt}
 \begin{qbox}{B \ \ Know your product}
 \begin{center}
-\begin{tikzpicture}[font=\scriptsize]
- \node[inner sep=0] (img) at (0,0) {\IfFileExists{photos/qsg_product.jpg}{\includegraphics[width=7.2cm,height=3.7cm,keepaspectratio]{photos/qsg_product.jpg}}{%
-  \begin{tikzpicture}[x=1cm,y=1cm]
-   \useasboundingbox (0,0) rectangle (7.2,3.7);
-   % case (front view), speaker pod on the right
-   \draw[fill=black!8,draw=black!70,line width=0.8pt,rounded corners=6pt] (0.5,0.45) rectangle (5.0,3.0);
-   \draw[fill=black!12,draw=black!70,line width=0.8pt,rounded corners=8pt] (5.2,0.65) rectangle (6.7,2.8);
-   \foreach \y in {1.0,1.3,...,2.5}{\draw[black!45,line width=0.9pt,line cap=round] (5.5,\y)--(6.4,\y);}
-   % camera window
-   \draw[fill=black!75,draw=black!80] (1.9,1.75) circle (0.42);\draw[fill=black!40,draw=none] (1.9,1.75) circle (0.18);
-   \fill[white,opacity=0.6] (1.78,1.88) circle (0.05);
-   % vents
-   \foreach \x in {3.2,3.45,...,4.5}{\draw[black!45,line width=1pt,line cap=round] (\x,0.9)--(\x,1.5);}
-   % top: PAIR button, TRIP switch
-   \draw[fill=white,draw=black!70,line width=0.7pt] (3.3,3.0) rectangle (3.75,3.18);\node[font=\tiny] at (3.52,3.36) {PAIR};
-   \draw[fill=black!20,draw=black!70,line width=0.7pt] (4.15,3.0) rectangle (4.75,3.16);\draw[fill=Amber,draw=black!70] (4.45,3.08) rectangle (4.7,3.24);\node[font=\tiny] at (4.45,3.38) {TRIP};
-   % power port (left side)
-   \draw[fill=black!30,draw=black!70] (0.32,1.2) rectangle (0.5,1.55);
-   \node[font=\tiny,text=black!55] at (2.75,0.62) {\Brand\ \ModelNo};
-  \end{tikzpicture}}};
- % callouts (positions to be adjusted once the photo is in)
- \node[circle,draw=NavyBlue,fill=white,inner sep=1pt,text=NavyBlue,font=\bfseries\scriptsize] (c1) at (-2.6,2.25) {1}; \draw[NavyBlue] (c1)--(-1.75,0.15);
- \node[circle,draw=NavyBlue,fill=white,inner sep=1pt,text=NavyBlue,font=\bfseries\scriptsize] (c2) at (3.35,2.25) {2}; \draw[NavyBlue] (c2)--(2.4,1.0);
- \node[circle,draw=NavyBlue,fill=white,inner sep=1pt,text=NavyBlue,font=\bfseries\scriptsize] (c3) at (-0.08,2.25) {3}; \draw[NavyBlue] (c3)--(-0.08,1.55);
- \node[circle,draw=NavyBlue,fill=white,inner sep=1pt,text=NavyBlue,font=\bfseries\scriptsize] (c4) at (1.25,2.25) {4}; \draw[NavyBlue] (c4)--(0.95,1.6);
- \node[circle,draw=NavyBlue,fill=white,inner sep=1pt,text=NavyBlue,font=\bfseries\scriptsize] (c5) at (-3.6,-1.4) {5}; \draw[NavyBlue] (c5)--(-3.2,-0.47);
- \node[circle,draw=NavyBlue,fill=white,inner sep=1pt,text=NavyBlue,font=\bfseries\scriptsize] (c6) at (0.25,-2.15) {6}; \draw[NavyBlue] (c6)--(0.25,-0.75);
-\end{tikzpicture}\\[1pt]
-{\scriptsize\textbf{Front view}}
+\photo{qsg_front.jpg}{0.485\linewidth}{3.6cm}{Front}\hfill\photo{qsg_back.jpg}{0.47\linewidth}{3.6cm}{Back}\\[-1pt]
+{\scriptsize\textbf{Front} \hspace{0.36\linewidth} \textbf{Back}}
 \end{center}
 \vspace{-4pt}
-{\scriptsize \callout{1} Camera window \ \callout{2} Speaker \ \callout{3} PAIR button \ \callout{4} TRIP switch\\ \callout{5} Power input (micro-USB, 5\,V) \ \callout{6} Air vents --- keep clear}
+{\scriptsize \callout{1} Camera window \ \callout{2} Speaker \ \callout{3} PAIR button (sticker \emph{WORK})\\ \callout{4} TRIP button (sticker \emph{TO DO}) \ \callout{5} Power cable, USB-A plug}
 \end{qbox}
 \end{minipage}\hfill
 \begin{minipage}[t]{0.485\linewidth}\vspace{0pt}
 \begin{qbox}{C \ \ Set up in 4 steps}
 \renewcommand{\arraystretch}{1.0}
 \begin{tabular}{@{}>{\centering\arraybackslash}m{0.55cm} >{\raggedright\arraybackslash}m{\dimexpr\linewidth-3.6cm\relax} >{\centering\arraybackslash}m{2.2cm}@{}}
-\stepno{1} & \textbf{Connect power.} Plug the cable into \callout{5} and a power bank. Wait about 1~min for \say{System ready.} &
+\stepno{1} & \textbf{Connect power.} Plug the power cable \callout{5} into a power bank. Wait about 1~min for \say{System ready.} &
 \begin{tikzpicture}[scale=0.55]\draw[rounded corners=2pt,fill=black!8] (0,0) rectangle (1.6,1);\draw[fill=black!30] (-0.12,0.3) rectangle (0,0.6);
  \draw[line width=1.2pt,black!70] (-0.12,0.45)--(-0.6,0.45)--(-0.6,-0.5)--(1.9,-0.5);\draw[rounded corners=1.5pt,fill=black!70] (1.9,-0.75) rectangle (2.9,-0.25);
  \fill[green!70!black] (2.05,-0.6) rectangle (2.2,-0.4);\fill[green!70!black] (2.25,-0.6) rectangle (2.4,-0.4);\fill[green!70!black] (2.45,-0.6) rectangle (2.6,-0.4);\end{tikzpicture}\\[18pt]
-\stepno{2} & \textbf{Install the app.} Install the \AppName\ app (scan the code in F), open it and allow the four permissions it asks for. &
+\stepno{2} & \textbf{Install the app.} Install the \AppName\ app (code in F) and allow its four permissions. &
 \begin{tikzpicture}[scale=0.55]\draw[rounded corners=3pt,fill=black!8] (0,0) rectangle (0.9,1.6);\draw[fill=NavyBlue!85] (0.1,0.25) rectangle (0.8,1.35);
  \draw[white,line width=0.9pt] (0.27,0.8)--(0.42,0.65)--(0.65,0.95);\draw[line width=1pt,-{Stealth[length=1.4mm]}] (1.6,1.4)--(1.6,0.6);\draw (1.35,0.45)--(1.85,0.45);\end{tikzpicture}\\[18pt]
 \stepno{3} & \textbf{Pair.} Hold \callout{3} \textbf{PAIR} 5~s until \say{Pairing mode on.} Tap \textbf{Pair} in the app; type the code the unit speaks. &
 \begin{tikzpicture}[scale=0.48]\draw[rounded corners=3pt,fill=black!8] (0,0) rectangle (0.8,1.4);\draw[fill=white] (0.1,0.25) rectangle (0.7,1.15);
  \node[font=\tiny] at (0.4,0.7) {\textbf{123}};
  \foreach \r in {0.5,0.8,1.1}{\draw[NavyBlue,line width=0.7pt] (1.0,0.7)+(-40:\r) arc(-40:40:\r);}\draw[rounded corners=2pt,fill=black!8] (2.2,0.2) rectangle (3.2,1.0);\end{tikzpicture}\\[18pt]
-\stepno{4} & \textbf{Drive.} Place the unit with \callout{1} facing the road. Switch \callout{4} \textbf{TRIP} on when you set off, off when you park: you hear the trip summary. &
+\stepno{4} & \textbf{Drive.} Place the unit with \callout{1} facing the road. Press \callout{4} \textbf{TRIP} before you set off, and again when you park: you hear the trip summary. &
 \begin{tikzpicture}[scale=0.55]\draw[fill=black!10,draw=black!50] (0,0)--(0.7,1.4)--(1.5,1.4)--(2.2,0)--cycle;
  \foreach \y in {0.15,0.6,1.05}{\draw[Amber,line width=1.4pt] (1.1,\y)--(1.1,\y+0.22);}
  \draw[fill=white,draw=red!80!black,line width=1.2pt] (2.7,1.0) circle (0.38);\node[font=\tiny\bfseries] at (2.7,1.0) {50};\end{tikzpicture}\\
@@ -192,6 +165,7 @@ $\square$ USB power cable $\times$1 & $\square$ Full User Manual\\
 \begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.5\linewidth} >{\raggedright\arraybackslash}X@{}}
 \scriptsize\say{Self test passed. System ready.} & \scriptsize Ready to use\\
 \scriptsize\say{Pairing mode on.} & \scriptsize Waiting 2\,min for the app\\
+\scriptsize\say{Trip started.} & \scriptsize You pressed TRIP\\
 \scriptsize\say{Speed limit 50.} & \scriptsize A road sign was read\\
 \scriptsize\say{Slow down. Speed limit 50.} & \scriptsize You are over the limit\\
 \scriptsize\say{Sign alerts paused.} & \scriptsize Camera blocked or dazzled\\

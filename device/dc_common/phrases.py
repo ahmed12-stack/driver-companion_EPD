@@ -49,6 +49,8 @@ SELFTEST_OK = "Self test passed. System ready."
 PAIRING_ON = "Pairing mode on."
 PAIRING_OFF = "Pairing mode off."
 PHONE_PAIRED = "Phone paired."
+TRIP_STARTED = "Trip started."
+TRIP_ENDED = "Trip ended."
 
 MODULE_PROBLEMS = ("stopped working", "is not responding")
 
@@ -74,6 +76,6 @@ def fixed_phrases() -> list:
     out = [overspeed_phrase(k) for k in SPEED_LIMITS]
     out += list(SIGN_PHRASES.values())
     out += [SIGNS_PAUSED, SIGNS_RESUMED, CAMERA_MISSING, CAMERA_FOUND, SIGNS_FAILED,
-            SELFTEST_OK, PAIRING_ON, PAIRING_OFF, PHONE_PAIRED]
+            SELFTEST_OK, PAIRING_ON, PAIRING_OFF, PHONE_PAIRED, TRIP_STARTED, TRIP_ENDED]
     out += [module_warning(m, p) for m in MODULE_NAMES for p in MODULE_PROBLEMS]
     return list(dict.fromkeys(out))
